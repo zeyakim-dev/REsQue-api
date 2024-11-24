@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "resque-api"
+version = "0.1.0"
+description = ""
+authors = ["zeyakim-dev <chlwltjrdev@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "3.11.9"
+flask = "^3.1.0"
+flask-sqlalchemy = "^3.1.1"
+python-dotenv = "^1.0.1"
+pytest = "^8.3.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
