@@ -1,11 +1,14 @@
 
 from dataclasses import dataclass
+from typing import Protocol
 
 from src.infrastructure.security.password_hasher import PasswordHasher
 from src.infrastructure.uuid.uuid_generator import UUIDv7Generator
-from src.application.service.auth.auth_service import UserRepository
 from src.domain.user.user import User
 
+class UserRepository(Protocol):
+    def save(self, user: User) -> None:
+        pass
 
 @dataclass(frozen=True)
 class RegisterCommand:
