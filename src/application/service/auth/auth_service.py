@@ -10,9 +10,11 @@ from src.infrastructure.uuid.uuid_generator import UUIDv7Generator
 class UserRepository(Protocol):
     def save(self, user: User) -> None: ...
 
+
 class LoginCommand(Protocol):
     def execute(self, user_repository, password_hasher):
         pass
+
 
 class AuthService:
     def __init__(
@@ -29,8 +31,11 @@ class AuthService:
         command.execute(
             user_repository=self._user_repository,
             password_hasher=self._password_hasher,
-            id_generator=self._id_generator
+            id_generator=self._id_generator,
         )
-    
+
     def login(self, command: LoginCommand) -> None:
-        pass
+        command.execute(
+            user_repository=self._user_repository,
+            password_hasher=self._password_hasher,
+        )
