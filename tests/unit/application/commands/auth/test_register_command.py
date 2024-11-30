@@ -61,4 +61,4 @@ class TestRegisterCommand:
         
         # When/Then
         with pytest.raises(ValueError, match="잘못된 사용자 데이터"):
-            command.execute(mock_user_repository, mock_id_generator, mock_password_hasher)
+            command.execute(mock_user_repository, mock_id_generator, mock_password_hasher) 
