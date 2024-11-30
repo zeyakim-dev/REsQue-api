@@ -4,8 +4,6 @@ from uuid import UUID
 
 import pytest
 
-from src.domain.project.project import Project
-from src.domain.project.project_member import ProjectMember, Role
 from src.domain.user.user import User
 
 
@@ -34,17 +32,6 @@ class TestUser:
     @pytest.fixture
     def valid_user_info(self):
         return {"username": "testuser", "password": "password123"}
-
-    @pytest.fixture
-    def sample_project(self, id_generator):
-        return Project(
-            id=id_generator.generate(),
-            title="Test Project",
-            description="Test Description",
-            founder_id=UUID("01937b5c-7757-7855-8138-355fc7d85155"),
-            status="DRAFT",
-            created_at=datetime.now()
-        )
 
     def test_create_user(
         self,
@@ -110,78 +97,3 @@ class TestUser:
 
         # Then
         assert user1 == user2
-
-    def test_join_project(
-        self,
-        valid_user_info,
-        password_hasher,
-        id_generator,
-        sample_project
-    ):
-        # Given
-        user = User.create(valid_user_info, password_hasher, id_generator)
-        role = Role.MEMBER
-
-        # When
-        project_member = user.join_project(sample_project, role)
-
-        # Then
-        assert isinstance(project_member, ProjectMember)
-        assert project_member.user_id == user.id
-        assert project_member.project_id == sample_project.id
-        assert project_member.role == role
-
-    def test_join_project_with_different_roles(
-        self,
-        valid_user_info,
-        password_hasher,
-        id_generator,
-        sample_project
-    ):
-        # Given
-        user = User.create(valid_user_info, password_hasher, id_generator)
-        roles = [Role.ADMIN, Role.MANAGER, Role.MEMBER]
-
-        for role in roles:
-            # When
-            project_member = user.join_project(sample_project, role)
-
-            # Then
-            assert project_member.role == role
-            assert project_member.user_id == user.id
-            assert project_member.project_id == sample_project.id
-
-    def test_join_project_creates_different_membership_ids(
-        self,
-        valid_user_info,
-        password_hasher,
-        id_generator,
-        sample_project
-    ):
-        # Given
-        user = User.create(valid_user_info, password_hasher, id_generator)
-        
-        # When
-        member1 = user.join_project(sample_project, Role.MEMBER)
-        member2 = user.join_project(sample_project, Role.MEMBER)
-
-        # Then
-        assert member1.id != member2.id
-
-    def test_join_project_preserves_user_immutability(
-        self,
-        valid_user_info,
-        password_hasher,
-        id_generator,
-        sample_project
-    ):
-        # Given
-        user = User.create(valid_user_info, password_hasher, id_generator)
-        original_user_dict = dataclasses.asdict(user)
-
-        # When
-        user.join_project(sample_project, Role.MEMBER)
-
-        # Then
-        current_user_dict = dataclasses.asdict(user)
-        assert original_user_dict == current_user_dict
