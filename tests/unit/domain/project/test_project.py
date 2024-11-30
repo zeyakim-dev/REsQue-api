@@ -26,10 +26,7 @@ class TestProject:
 
     @pytest.fixture
     def valid_project_info(self):
-        return {
-            "title": "Test Project",
-            "description": "This is a test project"
-        }
+        return {"title": "Test Project", "description": "This is a test project"}
 
     def test_create_project(
         self,

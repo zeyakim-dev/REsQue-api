@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Protocol, List
+from typing import List, Protocol
 from uuid import UUID
 
 from src.domain.project.project_member import ProjectMember, Role

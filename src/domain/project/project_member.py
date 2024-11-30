@@ -36,14 +36,14 @@ class ProjectMember:
             user_id=user_id,
             project_id=project_id,
             role=role,
-            joined_at=datetime.now()
+            joined_at=datetime.now(),
         )
-    
+
     def change_role(self, new_role: Role) -> "ProjectMember":
         return ProjectMember(
             id=self.id,
             user_id=self.user_id,
             project_id=self.project_id,
             role=new_role,
-            joined_at=self.joined_at
+            joined_at=self.joined_at,
         )
