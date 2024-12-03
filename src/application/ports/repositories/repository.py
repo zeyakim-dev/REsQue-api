@@ -1,18 +1,31 @@
 from abc import ABC, abstractmethod
-from typing import Optional, TypeVar, Generic
+from typing import Generic, Optional, Set, TypeVar
 from uuid import UUID
 
-T = TypeVar('T')  # 엔티티 타입을 위한 타입 변수
+from src.domain.entity import Entity
+
+T = TypeVar("T")
 
 class Repository(ABC, Generic[T]):
     """기본 Repository 추상 클래스"""
+
+    def __init__(self):
+        self.seen: Set[Entity] = set()
+        
+    def add(self, entity: Entity):
+        self._add(entity)
+        self.seen.add(entity)
+        
+    def get(self, id: UUID) -> Entity:
+        entity = self._get(id)
+        if entity:
+            self.seen.add(entity)
+        return entity
     
     @abstractmethod
-    def save(self, entity: T) -> None:
-        """엔티티 저장 또는 수정"""
-        pass
+    def _add(self, entity: Entity):
+        raise NotImplementedError
     
     @abstractmethod
-    def find_by_id(self, id: UUID) -> Optional[T]:
-        """ID로 엔티티 조회"""
-        pass
+    def _get(self, id: UUID):
+        raise NotImplementedError
