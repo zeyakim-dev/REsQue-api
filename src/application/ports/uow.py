@@ -1,4 +1,9 @@
-from typing import Protocol
+from typing import List, Protocol, Type, TypeVar
+
+from src.application.events.event import Event
+from src.application.ports.repositories.repository import Repository
+
+T = TypeVar("T", bound="Repository")
 
 
 class UnitOfWork(Protocol):
@@ -9,6 +14,8 @@ class UnitOfWork(Protocol):
     def commit(self) -> None: ...
 
     def rollback(self) -> None: ...
+    
+    def collect_new_events(self) -> List[Event]: ...
 
     @property
-    def repository(self): ...
+    def get_repository(self, repository_type: Type[T]) -> T: ...
