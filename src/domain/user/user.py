@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Protocol
 from uuid import UUID
 
+from src.domain.entity import Entity
 from src.domain.project.project import Project
 from src.domain.project.project_member import ProjectMember, Role
 
@@ -13,12 +14,10 @@ class PasswordHasher(Protocol):
 class IdGenerator(Protocol):
     def generate(self) -> UUID: ...
 
-
 @dataclass(frozen=True)
-class User:
+class User(Entity):
     username: str
     hashed_password: str
-    id: UUID
 
     @staticmethod
     def create(
