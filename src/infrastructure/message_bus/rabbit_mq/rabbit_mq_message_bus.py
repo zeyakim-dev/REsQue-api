@@ -2,6 +2,7 @@ from datetime import datetime
 import json
 import logging
 from typing import Any, Dict, List
+from uuid import UUID
 import pika
 from dataclasses import asdict
 
@@ -10,8 +11,6 @@ from src.application.events.event import Event
 from src.application.ports.uow import UnitOfWork
 from src.application.ports.message_bus import AbstractMessageBus, Message
 from .config import RabbitMQConfig
-
-logger = logging.getLogger(__name__)
 
 class RabbitMQMessageBus(AbstractMessageBus):
     def __init__(
@@ -62,7 +61,6 @@ class RabbitMQMessageBus(AbstractMessageBus):
         try:
             return handler(command, uow)
         except Exception as e:
-            logger.error(f"Error handling command {command_type}: {str(e)}")
             raise
 
     def _handle_event(self, event: Event, uow: UnitOfWork) -> None:
@@ -74,7 +72,6 @@ class RabbitMQMessageBus(AbstractMessageBus):
             try:
                 handler(event, uow)
             except Exception as e:
-                logger.error(f"Error handling event {event_type}: {str(e)}")
                 self._publish_error(event, e)
 
     def _collect_new_events(self, uow: UnitOfWork) -> List[Event]:
@@ -86,6 +83,13 @@ class RabbitMQMessageBus(AbstractMessageBus):
         event_type = event.__class__.__name__
         
         try:
+            # UUID를 문자열로 변환하는 JSONEncoder
+            class UUIDEncoder(json.JSONEncoder):
+                def default(self, obj):
+                    if isinstance(obj, UUID):
+                        return str(obj)
+                    return super().default(obj)
+            
             message = {
                 "type": event_type,
                 "data": asdict(event) if hasattr(event, '__dataclass_fields__') else vars(event),
@@ -95,17 +99,14 @@ class RabbitMQMessageBus(AbstractMessageBus):
             self.channel.basic_publish(
                 exchange=self.config.exchange_name,
                 routing_key=event_type,
-                body=json.dumps(message),
+                body=json.dumps(message, cls=UUIDEncoder),  # UUIDEncoder 사용
                 properties=pika.BasicProperties(
                     delivery_mode=2,  # persistent message
                     content_type='application/json'
                 )
             )
             
-            logger.info(f"Published event {event_type}")
-            
         except Exception as e:
-            logger.error(f"Error publishing event {event_type}: {str(e)}")
             raise
 
     def _publish_error(self, message: Message, error: Exception) -> None:
@@ -128,7 +129,7 @@ class RabbitMQMessageBus(AbstractMessageBus):
             )
             
         except Exception as e:
-            logger.error(f"Error publishing error message: {str(e)}")
+            raise
 
     def start_consuming(self) -> None:
         """메시지 소비를 시작합니다."""
@@ -138,10 +139,8 @@ class RabbitMQMessageBus(AbstractMessageBus):
         def callback(ch, method, properties, body):
             try:
                 message = json.loads(body)
-                # 메시지 처리 로직 구현
-                logger.info(f"Received message: {message}")
             except Exception as e:
-                logger.error(f"Error processing message: {str(e)}")
+                raise
                 
         self.channel.basic_consume(
             queue=self.config.queue_name,
@@ -149,11 +148,9 @@ class RabbitMQMessageBus(AbstractMessageBus):
             auto_ack=True
         )
         
-        logger.info(f"Start consuming from queue: {self.config.queue_name}")
         self.channel.start_consuming()
 
     def close(self) -> None:
         """연결을 종료합니다."""
         if self.connection and not self.connection.is_closed:
             self.connection.close()
-            logger.info("RabbitMQ connection closed")
