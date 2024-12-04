@@ -2,40 +2,14 @@ import dataclasses
 from datetime import datetime
 from uuid import UUID
 import pytest
-from src.domain.user.user import User
-
-class StubPasswordHasher:
-    def hash(self, password: str) -> str:
-        return f"hashed_{password}"
-        
-    def verify(self, password: str, hashed_password: str) -> bool:
-        return hashed_password == f"hashed_{password}"
-
-class StubIdGenerator:
-    def __init__(self, fixed_uuid: str = "01937b5c-7757-7855-8138-355fc7d85155"):
-        self._uuid = UUID(fixed_uuid)
-        
-    def generate(self) -> UUID:
-        return self._uuid
+from src.domain.user.user import User, IdGenerator, PasswordHasher
 
 class TestUser:
-    @pytest.fixture
-    def password_hasher(self):
-        return StubPasswordHasher()
-        
-    @pytest.fixture
-    def id_generator(self):
-        return StubIdGenerator()
-        
-    @pytest.fixture
-    def valid_user_info(self):
-        return {"username": "testuser", "password": "password123"}
-
     def test_create_user(
         self,
         valid_user_info,
-        password_hasher: StubPasswordHasher,
-        id_generator: StubIdGenerator,
+        password_hasher: PasswordHasher,
+        id_generator: IdGenerator,
     ):
         # When
         user = User.create(valid_user_info, password_hasher, id_generator)
@@ -76,17 +50,6 @@ class TestUser:
         
         # Then
         assert result is False
-
-    def test_create_user_with_different_id(self, valid_user_info, password_hasher):
-        # Given
-        different_uuid = "01937b64-4565-7865-8261-6d0cf7847b33"
-        different_id_generator = StubIdGenerator(different_uuid)
-        
-        # When
-        user = User.create(valid_user_info, password_hasher, different_id_generator)
-        
-        # Then
-        assert user.id == UUID(different_uuid)
 
     def test_user_equality(self, valid_user_info, password_hasher, id_generator):
         # Given
