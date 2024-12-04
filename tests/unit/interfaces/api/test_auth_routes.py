@@ -4,6 +4,7 @@ from flask import Flask
 from src.application.commands.auth.login_command import LoginResponse
 from src.application.ports.message_bus import AbstractMessageBus
 from src.application.ports.uow import UnitOfWork
+from src.infrastructure.message_bus.rabbit_mq.rabbit_mq_message_bus import RabbitMQMessageBus
 from src.infrastructure.security.jwt_token_generator import JWTTokenGenerator
 from src.infrastructure.security.password_hasher import PasswordHasher
 from src.infrastructure.uuid.uuid_generator import UUIDv7Generator
@@ -16,7 +17,15 @@ def app():
 
 @pytest.fixture
 def message_bus(mocker):
-    return mocker.create_autospec(AbstractMessageBus)
+    # 필요한 의존성들을 Mock으로 생성
+    config = mocker.Mock()
+    command_handlers = {}
+    event_handlers = {}
+    
+    # RabbitMQMessageBus 자체를 Mock으로 대체
+    mock_message_bus = mocker.Mock(spec=AbstractMessageBus)
+    
+    return mock_message_bus
 
 @pytest.fixture
 def uow(mocker):
