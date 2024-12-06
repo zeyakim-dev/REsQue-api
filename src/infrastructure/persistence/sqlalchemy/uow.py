@@ -8,30 +8,35 @@ T = TypeVar("T", bound=SQLAlchemyRepository)
 
 class SQLAlchemyUnitOfWork(UnitOfWork):
     def __init__(self, session_factory, repositories: Dict[Type[T], Callable[[Session], T]]):
-        super().__init__()  # 부모 클래스 초기화 호출
+        super().__init__()
         self.session_factory = session_factory
         self.repository_factories = repositories
         self._session: Optional[Session] = None
         self._repositories: Dict[Type[T], T] = {}
 
-    def __enter__(self) -> "SQLAlchemyUnitOfWork":
+    def _begin(self) -> "SQLAlchemyUnitOfWork":
+        """UnitOfWork 작업을 시작합니다."""
         if self._session is not None:
             raise RuntimeError("이미 활성화된 UnitOfWork가 존재합니다")
         self._session = self.session_factory()
         return self
 
     def __exit__(self, *args) -> None:
-        if self._session:
-            self._session.close()
-            self._session = None
-            self._repositories.clear()
+        """부모의 __exit__을 호출한 후 세션을 정리합니다."""
+        try:
+            super().__exit__(*args)
+        finally:
+            if self._session:
+                self._session.close()
+                self._session = None
+                self._repositories.clear()
 
-    def commit(self) -> None:
+    def _commit(self) -> None:
         if self._session is None:
             raise RuntimeError("활성화된 UnitOfWork가 없습니다")
         self._session.commit()
 
-    def rollback(self) -> None:
+    def _rollback(self) -> None:
         if self._session is None:
             raise RuntimeError("활성화된 UnitOfWork가 없습니다")
         self._session.rollback()
@@ -40,11 +45,18 @@ class SQLAlchemyUnitOfWork(UnitOfWork):
         if self._session is None:
             raise RuntimeError("활성화된 UnitOfWork가 없습니다")
 
-        if repository_type not in self._repositories:
-            if repository_type not in self.repository_factories:
-                raise KeyError(f"지원하지 않는 레포지토리 타입입니다: {repository_type}")
-            
-            factory = self.repository_factories[repository_type]
-            self._repositories[repository_type] = factory(self._session)
+        # 1. 기존 캐시된 레포지토리가 있는지 확인
+        repository = self._repositories.get(repository_type)
+        if repository is not None:
+            return repository
 
-        return self._repositories[repository_type]
+        # 2. 팩토리 확인
+        factory = self.repository_factories.get(repository_type)
+        if factory is None:
+            raise KeyError(f"지원하지 않는 레포지토리 타입입니다: {repository_type.__name__}")
+
+        # 3. 새 레포지토리 생성 및 캐싱
+        repository = factory(self._session)  # 팩토리로 새 인스턴스 생성
+        self._repositories[repository_type] = repository
+
+        return repository
