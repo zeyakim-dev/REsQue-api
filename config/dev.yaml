@@ -9,11 +9,12 @@ security:
   jwt_generator:
     type: jwt
     config:
-      jwt_secret: your-secret-key
-      jwt_expiry_minutes: 30
+      secret_key: your-secret-key
+      token_expiry_minutes: 60
   password_hasher:
     type: bcrpyt
-    password_work_factor: 12
+    config:
+      work_factor: 12
 
 message_bus:
   type: rabbitmq
