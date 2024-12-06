@@ -1,3 +1,5 @@
+from dependency_injector.wiring import inject, Provider
+
 from src.application.commands.auth.login_command import LoginCommand, LoginResponse
 from src.application.commands.auth.register_command import RegisterCommand
 from src.application.ports.message_bus import AbstractMessageBus
@@ -9,11 +11,12 @@ from src.interfaces.api import auth_api
 from flask import request, jsonify
 
 @auth_api.route('/register', methods=['POST'])
+@inject
 def register(
-    message_bus: AbstractMessageBus,
-    uow: UnitOfWork,
-    password_hasher: PasswordHasher,
-    id_generator: UUIDv7Generator
+    message_bus: AbstractMessageBus = Provider[AbstractMessageBus],
+    uow: UnitOfWork = Provider[UnitOfWork],
+    password_hasher: PasswordHasher = Provider[PasswordHasher],
+    id_generator: UUIDv7Generator = Provider[UUIDv7Generator]
 ):
     try:
         user_data = request.get_json()
@@ -30,11 +33,12 @@ def register(
         return jsonify({'error': str(e)}), 400
 
 @auth_api.route('/sign-in/', methods=['POST'])
+@inject
 def authenticate(
-    message_bus: AbstractMessageBus,
-    uow: UnitOfWork,
-    password_hasher: PasswordHasher,
-    token_generator: JWTTokenGenerator
+    message_bus: AbstractMessageBus = Provider[AbstractMessageBus],
+    uow: UnitOfWork = Provider[UnitOfWork],
+    password_hasher: PasswordHasher = Provider[PasswordHasher],
+    token_generator: JWTTokenGenerator = Provider[JWTTokenGenerator]
 ):
     try:
         user_data = request.get_json()
