@@ -8,7 +8,6 @@ from uuid import UUID
 from src.application.commands.command import Command
 from src.application.events.event import Event
 from src.application.ports.uow import UnitOfWork
-from src.infrastructure.message_bus.rabbit_mq.config import RabbitMQConfig
 from src.infrastructure.message_bus.rabbit_mq.rabbit_mq_message_bus import RabbitMQMessageBus
 
 # 테스트용 더미 클래스들
@@ -41,14 +40,14 @@ class TestUnitOfWork:
 
 @pytest.fixture
 def config():
-    return RabbitMQConfig(
-        host='localhost',
-        port=5672,
-        username='guest',
-        password='guest',
-        exchange_name='test_exchange',
-        queue_name='test_queue'
-    )
+    return {
+        'host': 'localhost',
+        'port': 5672,
+        'username': 'guest',
+        'password': 'guest',
+        'exchange_name': 'test_exchange',
+        'queue_name': 'test_queue'
+    }
 
 @pytest.fixture
 def mock_pika():
@@ -88,26 +87,26 @@ class TestRabbitMQMessageBus:
         """메시지 버스 초기화 테스트"""
         # connection 설정 검증
         mock_pika.PlainCredentials.assert_called_once_with(
-            config.username, 
-            config.password
+            config['username'], 
+            config['password']
         )
         
         mock_pika.ConnectionParameters.assert_called_once()
         args = mock_pika.ConnectionParameters.call_args
-        assert args.kwargs['host'] == config.host
-        assert args.kwargs['port'] == config.port
+        assert args.kwargs['host'] == config['host']
+        assert args.kwargs['port'] == config['port']
         
         # exchange 선언 검증
         channel = message_bus.channel
         channel.exchange_declare.assert_called_once_with(
-            exchange=config.exchange_name,
+            exchange=config['exchange_name'],
             exchange_type='topic',
             durable=True
         )
         
         # queue 선언 검증
         channel.queue_declare.assert_called_once_with(
-            queue=config.queue_name,
+            queue=config['queue_name'],
             durable=True
         )
 
