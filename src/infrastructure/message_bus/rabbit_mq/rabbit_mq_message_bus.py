@@ -1,6 +1,5 @@
 from datetime import datetime
 import json
-import logging
 from typing import Any, Dict, List
 from uuid import UUID
 import pika
@@ -10,12 +9,11 @@ from src.application.commands.command import Command
 from src.application.events.event import Event
 from src.application.ports.uow import UnitOfWork
 from src.application.ports.message_bus import AbstractMessageBus, Message
-from .config import RabbitMQConfig
 
 class RabbitMQMessageBus(AbstractMessageBus):
     def __init__(
         self,
-        config: RabbitMQConfig,
+        config: Dict[str, Any],
         command_handlers: Dict[str, Any],
         event_handlers: Dict[str, List[Any]]
     ):
@@ -24,10 +22,13 @@ class RabbitMQMessageBus(AbstractMessageBus):
         self.event_handlers = event_handlers
         
         # RabbitMQ 연결 설정
-        credentials = pika.PlainCredentials(config.username, config.password)
+        credentials = pika.PlainCredentials(
+            config.get('username', 'guest'),
+            config.get('password', 'guest')
+        )
         parameters = pika.ConnectionParameters(
-            host=config.host,
-            port=config.port,
+            host=config.get('host', 'localhost'),
+            port=config.get('port', 5672),
             credentials=credentials,
             heartbeat=600,
             connection_attempts=3
@@ -38,15 +39,16 @@ class RabbitMQMessageBus(AbstractMessageBus):
         
         # Exchange 설정
         self.channel.exchange_declare(
-            exchange=config.exchange_name,
+            exchange=config.get('exchange_name', 'domain_events'),
             exchange_type='topic',
             durable=True
         )
         
         # 큐 설정 (지정된 경우)
-        if config.queue_name:
+        queue_name = config.get('queue_name')
+        if queue_name:
             self.channel.queue_declare(
-                queue=config.queue_name,
+                queue=queue_name,
                 durable=True
             )
     
@@ -83,7 +85,6 @@ class RabbitMQMessageBus(AbstractMessageBus):
         event_type = event.__class__.__name__
         
         try:
-            # UUID를 문자열로 변환하는 JSONEncoder
             class UUIDEncoder(json.JSONEncoder):
                 def default(self, obj):
                     if isinstance(obj, UUID):
@@ -97,11 +98,11 @@ class RabbitMQMessageBus(AbstractMessageBus):
             }
             
             self.channel.basic_publish(
-                exchange=self.config.exchange_name,
+                exchange=self.config.get('exchange_name', 'domain_events'),
                 routing_key=event_type,
-                body=json.dumps(message, cls=UUIDEncoder),  # UUIDEncoder 사용
+                body=json.dumps(message, cls=UUIDEncoder),
                 properties=pika.BasicProperties(
-                    delivery_mode=2,  # persistent message
+                    delivery_mode=2,
                     content_type='application/json'
                 )
             )
@@ -119,7 +120,7 @@ class RabbitMQMessageBus(AbstractMessageBus):
             }
             
             self.channel.basic_publish(
-                exchange=self.config.exchange_name,
+                exchange=self.config.get('exchange_name', 'domain_events'),
                 routing_key="error",
                 body=json.dumps(error_message),
                 properties=pika.BasicProperties(
@@ -133,7 +134,8 @@ class RabbitMQMessageBus(AbstractMessageBus):
 
     def start_consuming(self) -> None:
         """메시지 소비를 시작합니다."""
-        if not self.config.queue_name:
+        queue_name = self.config.get('queue_name')
+        if not queue_name:
             raise ValueError("Queue name must be configured to start consuming")
 
         def callback(ch, method, properties, body):
@@ -143,7 +145,7 @@ class RabbitMQMessageBus(AbstractMessageBus):
                 raise
                 
         self.channel.basic_consume(
-            queue=self.config.queue_name,
+            queue=queue_name,
             on_message_callback=callback,
             auto_ack=True
         )
