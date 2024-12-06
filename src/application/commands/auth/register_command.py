@@ -49,6 +49,4 @@ class RegisterCommand(Command[UUID]):
             
             # 저장
             user_repository.add(new_user)
-            uow.commit()
-            
             return new_user.id
