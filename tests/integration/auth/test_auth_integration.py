@@ -1,34 +1,12 @@
 from uuid import UUID
-import pika
 import pytest
-import docker
-import time
-from datetime import timedelta
-from typing import Dict, Type, Callable
-from sqlalchemy import create_engine
 
 from src.application.commands.auth.login_command import LoginCommand, LoginResponse
 from src.application.commands.auth.register_command import RegisterCommand
 from src.application.ports.repositories.user.user_repository import UserRepository
-from src.infrastructure.message_bus.rabbit_mq.config import RabbitMQConfig
-from src.infrastructure.message_bus.rabbit_mq.rabbit_mq_message_bus import RabbitMQMessageBus
-from src.infrastructure.persistence.sqlalchemy.models.base import Base
-from src.infrastructure.persistence.sqlalchemy.repositories.base_repository import SQLAlchemyRepository
+from src.domain.user.user import User
 from src.infrastructure.persistence.sqlalchemy.repositories.user_repository import SQLAlchemyUserRepository
-from src.infrastructure.persistence.sqlalchemy.uow import SQLAlchemyUnitOfWork
-from src.infrastructure.security.jwt_token_generator import JWTTokenGenerator
-from src.infrastructure.security.password_hasher import PasswordHasher
-from src.infrastructure.uuid.uuid_generator import UUIDv7Generator
 
-import pytest
-import docker
-import time
-import pika
-from uuid import UUID
-from datetime import timedelta
-from typing import Dict, Type, Callable
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
 
 
 class TestAuthIntegration:
@@ -62,6 +40,7 @@ class TestAuthIntegration:
         with uow:
             user_repo = uow.get_repository(UserRepository)
             saved_user = user_repo.find_by_username(username)
+            assert isinstance(saved_user, User)
             assert password_hasher.verify(password, saved_user.hashed_password)
 
         # When - 로그인
