@@ -50,19 +50,13 @@ class StubUnitOfWork(UnitOfWork):
         }
         self.committed = False
         
-    def __enter__(self) -> "StubUnitOfWork":
-        return self
-        
-    def __exit__(self, *args) -> None:
-        pass
-        
     def get_repository(self, repository_type: Type[Repository]) -> Repository:
         return self._repositories[repository_type]
         
-    def commit(self) -> None:
+    def _commit(self) -> None:
         self.committed = True
         
-    def rollback(self) -> None:
+    def _rollback(self) -> None:
         self.committed = False
 
 class TestRegisterCommand:
