@@ -19,10 +19,19 @@ class UUIDv7Generator:
         # 무작위 비트 생성 (74비트 필요)
         rand_bits = random.getrandbits(74)
         
-        # UUID 조합
-        uuid_int = (timestamp_ms & ((1 << 48) - 1)) << 80  # 상위 48비트는 타임스탬프
-        uuid_int |= 0x7 << 76  # 버전 비트 설정 (7)
-        uuid_int |= 0x2 << 62  # variant 비트 설정 (2)
-        uuid_int |= rand_bits   # 나머지 비트를 랜덤값으로 채움
+        # UUID 정수 생성
+        uuid_int = 0
+        
+        # 상위 48비트에 타임스탬프 설정
+        uuid_int |= (timestamp_ms & ((1 << 48) - 1)) << 80
+        
+        # 버전 7 설정 (다음 4비트)
+        uuid_int |= 0x7 << 76
+        
+        # Variant 2 설정 (다음 2비트)
+        uuid_int |= 0x2 << 62
+        
+        # 나머지 비트를 랜덤값으로 채움
+        uuid_int |= rand_bits & ((1 << 62) - 1)
         
         return UUID(int=uuid_int)
