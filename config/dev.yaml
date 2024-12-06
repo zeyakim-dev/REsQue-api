@@ -1,0 +1,26 @@
+persistence:
+  type: postgresql
+  config:  
+    url: postgresql://user:pass@localhost:5432/db
+    pool_size: 5
+    max_overflow: 10
+
+security:
+  jwt_generator:
+    type: jwt
+    config:
+      jwt_secret: your-secret-key
+      jwt_expiry_minutes: 30
+  password_hasher:
+    type: bcrpyt
+    password_work_factor: 12
+
+message_bus:
+  type: rabbitmq
+  config:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    exchange_name: domain_events
+    queue_name: null

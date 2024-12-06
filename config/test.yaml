@@ -1,0 +1,27 @@
+persistence:
+  type: sqlite
+  config:  
+    url: "sqlite:///:memory:"
+    connect_args:
+      check_same_thread: false
+
+security:
+  jwt_generator:
+    type: jwt
+    config:
+      jwt_secret: your-secret-key
+      jwt_expiry_minutes: 30
+  password_hasher:
+    type: bcrpyt
+    config:
+      password_work_factor: 4
+
+message_bus:
+  type: rabbitmq
+  config:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    exchange_name: domain_events
+    queue_name: null
