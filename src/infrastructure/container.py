@@ -1,6 +1,3 @@
-from dataclasses import dataclass
-from datetime import timedelta
-from typing import Dict
 from dependency_injector import containers, providers
 from sqlalchemy.orm import sessionmaker
 from src.application.ports.repositories.user.user_repository import UserRepository
@@ -8,8 +5,7 @@ from src.infrastructure.message_bus.config import MessageBusFactory
 from src.infrastructure.persistence.database_factory import DatabaseFactory
 from src.infrastructure.persistence.sqlalchemy.repositories.user_repository import SQLAlchemyUserRepository
 from src.infrastructure.persistence.sqlalchemy.uow import SQLAlchemyUnitOfWork
-from src.infrastructure.security.jwt_token_generator import JWTTokenGenerator
-from src.infrastructure.security.password_hasher import PasswordHasher
+from src.infrastructure.security.security_factory import SecurityFactory
 from src.infrastructure.uuid.uuid_generator import UUIDv7Generator
 
 
@@ -33,17 +29,13 @@ class Container(containers.DeclarativeContainer):
     # 보안 관련 컴포넌트들
     # 단순하고 직접적인 설정값 전달
     password_hasher = providers.Singleton(
-        PasswordHasher,
-        work_factor=config.security.password_hasher.config.password_work_factor
+        SecurityFactory.create_password_hashser,
+        configuration=config
     )
     
     token_generator = providers.Singleton(
-        JWTTokenGenerator,
-        secret_key=config.security.jwt_generator.config.jwt_secret,
-        token_expiry=providers.Factory(
-            timedelta,
-            minutes=config.security.jwt_generator.config.jwt_expiry_minutes
-        )
+        SecurityFactory.create_jwt_token_generator,
+        configuration=config
     )
     
     id_generator = providers.Singleton(UUIDv7Generator)
