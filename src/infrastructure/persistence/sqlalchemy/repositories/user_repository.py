@@ -48,9 +48,7 @@ class SQLAlchemyUserRepository(SQLAlchemyRepository[UserModel, User], UserReposi
             User: 변환된 도메인 엔티티
         """
         return User.reconstitute(
-            id=model.id,
-            username=model.username,
-            hashed_password=model.hashed_password
+            id=model.id, username=model.username, hashed_password=model.hashed_password
         )
 
     def find_by_username(self, username: str) -> Optional[User]:

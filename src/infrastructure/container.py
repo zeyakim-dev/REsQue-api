@@ -1,12 +1,12 @@
 from dependency_injector import containers, providers
 
+from src.infrastructure.id.uuid_generator import UUIDv7Generator
 from src.infrastructure.message_bus.config import MessageBusFactory
 from src.infrastructure.persistence import database_factory_factory
 from src.infrastructure.persistence.database_factory_factory import (
     DatabaseFactoryFactory,
 )
 from src.infrastructure.security.security_factory import SecurityFactory
-from src.infrastructure.id.uuid_generator import UUIDv7Generator
 
 
 class Container(containers.DeclarativeContainer):

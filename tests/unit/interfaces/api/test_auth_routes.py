@@ -6,12 +6,12 @@ from flask import Flask
 from src.application.commands.auth.login_command import LoginResponse
 from src.application.ports.message_bus import AbstractMessageBus
 from src.application.ports.uow import UnitOfWork
+from src.infrastructure.id.uuid_generator import UUIDv7Generator
 from src.infrastructure.message_bus.rabbit_mq.rabbit_mq_message_bus import (
     RabbitMQMessageBus,
 )
 from src.infrastructure.security.jwt_token_generator import JWTTokenGenerator
 from src.infrastructure.security.password_hasher import PasswordHasher
-from src.infrastructure.id.uuid_generator import UUIDv7Generator
 from src.interfaces.api.auth_routes import authenticate, register
 
 

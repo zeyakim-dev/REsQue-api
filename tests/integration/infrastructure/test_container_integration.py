@@ -6,6 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from src.application.ports.repositories.user.user_repository import UserRepository
+from src.infrastructure.id.uuid_generator import UUIDv7Generator
 from src.infrastructure.message_bus.rabbit_mq.rabbit_mq_message_bus import (
     RabbitMQMessageBus,
 )
@@ -14,7 +15,6 @@ from src.infrastructure.persistence.sqlalchemy.repositories.user_repository impo
 )
 from src.infrastructure.security.jwt_token_generator import JWTTokenGenerator
 from src.infrastructure.security.password_hasher import PasswordHasher
-from src.infrastructure.id.uuid_generator import UUIDv7Generator
 
 
 class TestContainerIntegration:

@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 
-from src.domain.user.exceptions import InvalidUsernameException, InvalidPasswordException
+from src.domain.user.exceptions import (
+    InvalidPasswordException,
+    InvalidUsernameException,
+)
 
 
 @dataclass(frozen=True)
@@ -9,21 +12,16 @@ class Username:
 
     def __post_init__(self):
         if not isinstance(self.value, str):
-            raise InvalidUsernameException(
-                self.value,
-                "사용자명은 문자열이어야 합니다"
-            )
-        
+            raise InvalidUsernameException(self.value, "사용자명은 문자열이어야 합니다")
+
         if not (4 <= len(self.value) <= 50):
             raise InvalidUsernameException(
-                self.value,
-                "사용자명은 최소 3자 이상, 최대 50자 이하여야 합니다"
+                self.value, "사용자명은 최소 3자 이상, 최대 50자 이하여야 합니다"
             )
-            
+
         if not self.value.isalnum():
             raise InvalidUsernameException(
-                self.value,
-                "사용자명은 알파벳과 숫자만 포함할 수 있습니다"
+                self.value, "사용자명은 알파벳과 숫자만 포함할 수 있습니다"
             )
 
 
@@ -39,7 +37,8 @@ class HashedPassword:
 
     def _is_valid(self, value: str) -> bool:
         return True
-        
+
+
 @dataclass(frozen=True)
 class Password:
     value: str
@@ -52,10 +51,9 @@ class Password:
 
     def _is_valid(self, value: str) -> bool:
         return (
-            isinstance(value, str) and
-            len(value) >= 8 and
-            any(c.isupper() for c in value) and
-            any(c.islower() for c in value) and
-            any(c.isdigit() for c in value)
+            isinstance(value, str)
+            and len(value) >= 8
+            and any(c.isupper() for c in value)
+            and any(c.islower() for c in value)
+            and any(c.isdigit() for c in value)
         )
-        

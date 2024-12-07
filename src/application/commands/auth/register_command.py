@@ -7,8 +7,8 @@ from src.application.ports.repositories.user.user_repository import UserReposito
 from src.application.ports.uow import UnitOfWork
 from src.domain.user.user import User
 from src.domain.user.values import HashedPassword, Password, Username
-from src.infrastructure.security.password_hasher import PasswordHasher
 from src.infrastructure.id.uuid_generator import UUIDv7Generator
+from src.infrastructure.security.password_hasher import PasswordHasher
 
 
 @dataclass(frozen=True)
@@ -52,7 +52,7 @@ class RegisterCommand(Command[UUID]):
                 username=username,
                 hashed_password=HashedPassword(
                     self._password_hasher.hash(password.value)
-                )
+                ),
             )
 
             user_repository.add(new_user)

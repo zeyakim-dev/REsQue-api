@@ -5,9 +5,9 @@ from src.application.commands.auth.login_command import LoginCommand, LoginRespo
 from src.application.commands.auth.register_command import RegisterCommand
 from src.application.ports.message_bus import AbstractMessageBus
 from src.application.ports.uow import UnitOfWork
+from src.infrastructure.id.uuid_generator import UUIDv7Generator
 from src.infrastructure.security.jwt_token_generator import JWTTokenGenerator
 from src.infrastructure.security.password_hasher import PasswordHasher
-from src.infrastructure.id.uuid_generator import UUIDv7Generator
 from src.interfaces.api import auth_api
 
 

@@ -1,8 +1,10 @@
 import pytest
-from src.domain.user.exceptions import InvalidUsernameException
-from src.domain.user.values import Username
-from src.domain.user.exceptions import InvalidPasswordException
-from src.domain.user.values import Password
+
+from src.domain.user.exceptions import (
+    InvalidPasswordException,
+    InvalidUsernameException,
+)
+from src.domain.user.values import Password, Username
 
 
 class TestUsername:

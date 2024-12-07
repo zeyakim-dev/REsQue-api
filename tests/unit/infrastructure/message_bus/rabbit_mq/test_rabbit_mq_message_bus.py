@@ -21,8 +21,7 @@ class TestCommand(Command):
     data: str
 
     def get_validators(self):
-        return {
-        }
+        return {}
 
     def execute(self, uow: UnitOfWork):
         return f"Executed {self.data}"
