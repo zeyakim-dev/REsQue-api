@@ -1,36 +1,38 @@
 from abc import ABC, abstractmethod
 from collections import deque
 from typing import Any, List
+
 from src.application.commands.command import Command
 from src.application.events.event import Event
 from src.application.ports.uow import UnitOfWork
 
 Message = Command | Event
 
+
 class AbstractMessageBus(ABC):
     """메시지 버스의 추상 기본 클래스입니다."""
-    
+
     def handle(self, message: Message, uow: UnitOfWork) -> List[Any]:
         """메시지를 처리하고 결과를 반환합니다."""
         results = []
         queue = deque([message])
-        
+
         while queue:
             current_message = queue.popleft()
             try:
                 result = self._process_message(current_message, uow)
                 if result is not None:
                     results.append(result)
-                    
+
                 # 새 이벤트 수집 및 외부 발행
                 new_events = self._collect_new_events(uow)
                 for event in new_events:
                     self._publish_event(event)  # 외부 발행용 hook 추가
                 queue.extend(new_events)
-                    
+
             except Exception as e:
                 self._handle_message_error(current_message, e)
-                
+
         return results
 
     def _process_message(self, message: Message, uow: UnitOfWork) -> Any:

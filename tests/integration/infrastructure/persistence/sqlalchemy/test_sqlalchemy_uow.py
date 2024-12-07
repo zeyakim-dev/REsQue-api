@@ -1,15 +1,19 @@
+from typing import Callable, Dict, Type
+from uuid import UUID as PyUUID
+from uuid import uuid4
+
 import pytest
-from typing import Dict, Type, Callable
-from uuid import UUID as PyUUID, uuid4
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from src.infrastructure.persistence.sqlalchemy.models.base import Base
-from src.infrastructure.persistence.sqlalchemy.repositories.base_repository import SQLAlchemyRepository
-from src.domain.entity import Entity
-from src.infrastructure.persistence.sqlalchemy.uow import SQLAlchemyUnitOfWork
-from sqlalchemy import String
+from sqlalchemy import String, create_engine
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, Session, mapped_column, sessionmaker
+
+from src.domain.entity import Entity
+from src.infrastructure.persistence.sqlalchemy.models.base import Base
+from src.infrastructure.persistence.sqlalchemy.repositories.base_repository import (
+    SQLAlchemyRepository,
+)
+from src.infrastructure.persistence.sqlalchemy.uow import SQLAlchemyUnitOfWork
+
 
 # 테스트용 모델과 엔티티
 class TestEntity(Entity):
@@ -17,18 +21,21 @@ class TestEntity(Entity):
         super().__init__(id)
         self.value = value
 
+
 class TestModel(Base):
     __tablename__ = "testmodels"
 
     id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     value: Mapped[int] = mapped_column()
 
+
 class TestRepository(SQLAlchemyRepository[TestModel, TestEntity]):
     def _to_model(self, entity: TestEntity) -> TestModel:
         return TestModel(id=entity.id, value=entity.value)
-        
+
     def _to_domain(self, model: TestModel) -> TestEntity:
         return TestEntity(id=model.id, value=model.value)
+
 
 class TestSQLAlchemyUnitOfWorkIntegration:
     """SQLAlchemy UnitOfWork 통합 테스트"""
@@ -47,11 +54,11 @@ class TestSQLAlchemyUnitOfWorkIntegration:
         return sessionmaker(bind=engine)
 
     @pytest.fixture(scope="function")
-    def repositories(self) -> Dict[Type[SQLAlchemyRepository], Callable[[Session], SQLAlchemyRepository]]:
+    def repositories(
+        self,
+    ) -> Dict[Type[SQLAlchemyRepository], Callable[[Session], SQLAlchemyRepository]]:
         """테스트용 레포지토리 팩토리 딕셔너리"""
-        return {
-            TestRepository: lambda session: TestRepository(session, TestModel)
-        }
+        return {TestRepository: lambda session: TestRepository(session, TestModel)}
 
     @pytest.fixture(scope="function")
     def uow(self, session_factory, repositories):
@@ -74,7 +81,9 @@ class TestSQLAlchemyUnitOfWorkIntegration:
     def test_uow_double_entry_prevention(self, uow):
         """UnitOfWork 중첩 진입 방지 테스트"""
         with uow:
-            with pytest.raises(RuntimeError, match="이미 활성화된 UnitOfWork가 존재합니다"):
+            with pytest.raises(
+                RuntimeError, match="이미 활성화된 UnitOfWork가 존재합니다"
+            ):
                 with uow:
                     pass
 
@@ -84,15 +93,15 @@ class TestSQLAlchemyUnitOfWorkIntegration:
             # 지원하는 레포지토리 타입
             repo = uow.get_repository(TestRepository)
             assert isinstance(repo, TestRepository)
-            
+
             # 동일한 타입 요청 시 같은 인스턴스 반환
             repo2 = uow.get_repository(TestRepository)
             assert repo is repo2
-            
+
             # 지원하지 않는 레포지토리 타입
             class UnsupportedRepo(SQLAlchemyRepository):
                 pass
-                
+
             with pytest.raises(KeyError, match="지원하지 않는 레포지토리 타입입니다"):
                 uow.get_repository(UnsupportedRepo)
 
@@ -106,7 +115,7 @@ class TestSQLAlchemyUnitOfWorkIntegration:
             repo = uow.get_repository(TestRepository)
             entity = TestEntity(id=test_id, value=test_value)
             repo.add(entity)
-            
+
         # 새로운 UoW에서 데이터 확인
         with uow:
             repo = uow.get_repository(TestRepository)
@@ -125,7 +134,7 @@ class TestSQLAlchemyUnitOfWorkIntegration:
             repo = uow.get_repository(TestRepository)
             entity = TestEntity(id=test_id, value=test_value)
             repo.add(entity)
-            
+
         # 실패하는 트랜잭션 시도
         try:
             with uow:
@@ -135,7 +144,7 @@ class TestSQLAlchemyUnitOfWorkIntegration:
                 raise ValueError("의도적인 에러 발생")
         except ValueError:
             pass
-            
+
         # 롤백 확인
         with uow:
             repo = uow.get_repository(TestRepository)

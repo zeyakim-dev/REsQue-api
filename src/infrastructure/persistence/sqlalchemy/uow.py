@@ -1,15 +1,21 @@
-from typing import Protocol, Type, TypeVar, Dict, Callable
+from typing import Callable, Dict, Optional, Protocol, Type, TypeVar
+
 from sqlalchemy.orm import Session
-from typing import Optional
+
 from src.application.ports.repositories.repository import Repository
 from src.application.ports.uow import UnitOfWork
-from src.infrastructure.persistence.sqlalchemy.repositories.base_repository import SQLAlchemyRepository
+from src.infrastructure.persistence.sqlalchemy.repositories.base_repository import (
+    SQLAlchemyRepository,
+)
 
 R = TypeVar("R", bound=Repository)
 T = TypeVar("T", bound=SQLAlchemyRepository)
 
+
 class SQLAlchemyUnitOfWork(UnitOfWork):
-    def __init__(self, session_factory, repositories: Dict[Type[R], Callable[[Session], T]]):
+    def __init__(
+        self, session_factory, repositories: Dict[Type[R], Callable[[Session], T]]
+    ):
         super().__init__()
         self.session_factory = session_factory
         self.repository_factories = repositories
@@ -55,7 +61,9 @@ class SQLAlchemyUnitOfWork(UnitOfWork):
         # 2. 팩토리 확인
         factory = self.repository_factories.get(repository_type)
         if factory is None:
-            raise KeyError(f"지원하지 않는 레포지토리 타입입니다: {repository_type.__name__}")
+            raise KeyError(
+                f"지원하지 않는 레포지토리 타입입니다: {repository_type.__name__}"
+            )
 
         # 3. 새 레포지토리 생성 및 캐싱
         repository = factory(self._session)  # 팩토리로 새 인스턴스 생성

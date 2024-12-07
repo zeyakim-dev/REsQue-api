@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import List, Type, TypeVar
+
 from src.application.events.event import Event
 from src.application.ports.repositories.repository import Repository
 
 T = TypeVar("T", bound="Repository")
+
 
 class UnitOfWork(ABC):
     """Unit of Work 추상 기본 클래스"""
