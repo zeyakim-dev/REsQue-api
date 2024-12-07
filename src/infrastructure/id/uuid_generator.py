@@ -2,8 +2,10 @@ import random
 import time
 from uuid import UUID
 
+from src.application.ports.id.id_generator import AbstractIdGenerator
 
-class UUIDv7Generator:
+
+class UUIDv7Generator(AbstractIdGenerator):
     def generate(self) -> UUID:
         """UUID v7을 생성합니다.
 
