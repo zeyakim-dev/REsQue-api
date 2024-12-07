@@ -19,6 +19,18 @@ class RegisterCommand(Command[UUID]):
     _password_hasher: PasswordHasher
     _id_generator: UUIDv7Generator
 
+    def get_validators(self):
+        return {
+            self.username: self.validate_username,
+            self.password: self.validate_password
+        }
+
+    def validate_username(self, username: str) -> None:
+        pass
+
+    def validate_password(self, password: str) -> None:
+        pass
+
     def execute(self, uow: UnitOfWork) -> UUID:
         """사용자 등록을 수행합니다.
 

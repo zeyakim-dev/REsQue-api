@@ -26,6 +26,18 @@ class LoginCommand(Command[LoginResponse]):
     _password_hasher: PasswordHasher
     _token_generator: JWTTokenGenerator
 
+    def get_validators(self):
+        return {
+            self.username: self.validate_username,
+            self.password: self.validate_password
+        }
+
+    def validate_username(self, username: str) -> None:
+        pass
+
+    def validate_password(self, password: str) -> None:
+        pass
+
     def execute(self, uow: UnitOfWork) -> LoginResponse:
         """로그인을 수행하고 JWT 토큰을 발급합니다.
 
