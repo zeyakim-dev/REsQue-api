@@ -6,7 +6,7 @@ from src.infrastructure.persistence.database_factory_factory import (
     DatabaseFactoryFactory,
 )
 from src.infrastructure.security.security_factory import SecurityFactory
-from src.infrastructure.uuid.uuid_generator import UUIDv7Generator
+from src.infrastructure.id.uuid_generator import UUIDv7Generator
 
 
 class Container(containers.DeclarativeContainer):
