@@ -34,8 +34,8 @@ class SQLAlchemyUserRepository(SQLAlchemyRepository[UserModel, User], UserReposi
         """
         return UserModel(
             id=entity.id,
-            username=entity.username,
-            hashed_password=entity.hashed_password,
+            username=entity.username.value,
+            hashed_password=entity.hashed_password.value,
         )
 
     def _to_domain(self, model: UserModel) -> User:
@@ -47,8 +47,10 @@ class SQLAlchemyUserRepository(SQLAlchemyRepository[UserModel, User], UserReposi
         Returns:
             User: 변환된 도메인 엔티티
         """
-        return User(
-            id=model.id, username=model.username, hashed_password=model.hashed_password
+        return User.reconstitute(
+            id=model.id,
+            username=model.username,
+            hashed_password=model.hashed_password
         )
 
     def find_by_username(self, username: str) -> Optional[User]:
