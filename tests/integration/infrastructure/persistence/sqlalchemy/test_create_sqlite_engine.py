@@ -1,6 +1,6 @@
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
-from src.infrastructure.persistence.sqlalchemy.config import create_sqlite_engine
+from src.infrastructure.persistence.sqlalchemy.sqlalchemy_database_factory import SQLAlchemyDatabaseFactory
 
 class TestSQLiteEngineIntegration:
     """SQLite 인메모리 엔진 생성에 대한 통합 테스트"""
@@ -13,7 +13,7 @@ class TestSQLiteEngineIntegration:
                 'check_same_thread': False
             }
         }
-        self.engine = create_sqlite_engine(self.config)
+        self.engine = SQLAlchemyDatabaseFactory(configuration=self.config).create_engine()
 
     def test_engine_instance_creation(self):
         """엔진 인스턴스 생성 검증"""

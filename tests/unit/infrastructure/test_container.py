@@ -96,8 +96,8 @@ class TestContainerConfiguration:
         
         # providers.Singleton의 내부 구조 확인
         session_factory_provider = container.session_factory
-        assert 'bind' in session_factory_provider.kwargs
-        assert session_factory_provider.kwargs['bind'] == container.db_engine
+        assert 'db_engine' in session_factory_provider.kwargs
+        assert session_factory_provider.kwargs['db_engine'] == container.db_engine
         
         # UoW의 의존성 확인
         uow_provider = container.uow
