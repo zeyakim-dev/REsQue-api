@@ -6,8 +6,9 @@ from src.application.commands.command import Command
 from src.application.ports.repositories.user.user_repository import UserRepository
 from src.application.ports.uow import UnitOfWork
 from src.domain.user.user import User
+from src.domain.user.values import HashedPassword, Password, Username
 from src.infrastructure.security.password_hasher import PasswordHasher
-from src.infrastructure.uuid.uuid_generator import UUIDv7Generator
+from src.infrastructure.id.uuid_generator import UUIDv7Generator
 
 
 @dataclass(frozen=True)
@@ -18,18 +19,6 @@ class RegisterCommand(Command[UUID]):
     password: str
     _password_hasher: PasswordHasher
     _id_generator: UUIDv7Generator
-
-    def get_validators(self):
-        return {
-            self.username: self.validate_username,
-            self.password: self.validate_password
-        }
-
-    def validate_username(self, username: str) -> None:
-        pass
-
-    def validate_password(self, password: str) -> None:
-        pass
 
     def execute(self, uow: UnitOfWork) -> UUID:
         """사용자 등록을 수행합니다.
@@ -47,19 +36,24 @@ class RegisterCommand(Command[UUID]):
             ValueError: 사용자명이 이미 존재하는 경우
         """
         with uow:
+            try:
+                username = Username(self.username)
+                password = Password(self.password)
+            except Exception as e:
+                return ValueError(e)
+
             user_repository: UserRepository = uow.get_repository(UserRepository)
 
-            # 사용자명 중복 검사
-            if user_repository.exists_by_username(self.username):
+            if user_repository.exists_by_username(username.value):
                 raise ValueError("이미 존재하는 사용자명입니다")
 
-            # 새로운 사용자 생성
-            new_user = User.create(
-                user_info=self.__dict__,
-                password_hasher=self._password_hasher,
-                id_generator=self._id_generator,
+            new_user = User(
+                id=self._id_generator.generate(),
+                username=username,
+                hashed_password=HashedPassword(
+                    self._password_hasher.hash(password.value)
+                )
             )
 
-            # 저장
             user_repository.add(new_user)
             return new_user.id

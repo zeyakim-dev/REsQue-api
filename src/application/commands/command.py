@@ -12,28 +12,6 @@ class Command(Generic[T], ABC):
     커맨드는 단일 비즈니스 작업을 캡슐화하며,
     UnitOfWork를 통해 트랜잭션 범위 내에서 실행됩니다.
     """
-    @abstractmethod
-    def get_validators(self) -> Dict[Any, List[Callable]]:
-        """검증 규칙을 반환합니다."""
-        pass
-
-    def validate(self):
-        """객체 생성 시 자동으로 모든 필드를 검증합니다"""
-        validators = self.get_validators()
-        for value, validator in validators.items():
-            try:
-                validator(value)
-            except ValueError as e:
-                # 도메인 특화된 예외로 변환
-                raise ValueError(
-                    validator.__name__.replace('validate_', ''),
-                    str(e)
-                )
-
-
-    def __post_init__(self):
-        """dataclass 생성 후 자동으로 검증을 수행합니다."""
-        self.validate()
 
     @abstractmethod
     def execute(self, uow: UnitOfWork) -> T:
