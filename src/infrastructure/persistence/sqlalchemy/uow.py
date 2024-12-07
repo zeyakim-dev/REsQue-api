@@ -1,13 +1,15 @@
 from typing import Protocol, Type, TypeVar, Dict, Callable
 from sqlalchemy.orm import Session
 from typing import Optional
+from src.application.ports.repositories.repository import Repository
 from src.application.ports.uow import UnitOfWork
 from src.infrastructure.persistence.sqlalchemy.repositories.base_repository import SQLAlchemyRepository
 
+R = TypeVar("R", bound=Repository)
 T = TypeVar("T", bound=SQLAlchemyRepository)
 
 class SQLAlchemyUnitOfWork(UnitOfWork):
-    def __init__(self, session_factory, repositories: Dict[Type[T], Callable[[Session], T]]):
+    def __init__(self, session_factory, repositories: Dict[Type[R], Callable[[Session], T]]):
         super().__init__()
         self.session_factory = session_factory
         self.repository_factories = repositories
