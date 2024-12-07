@@ -20,6 +20,10 @@ class TestCommand(Command):
     id: UUID
     data: str
 
+    def get_validators(self):
+        return {
+        }
+
     def execute(self, uow: UnitOfWork):
         return f"Executed {self.data}"
 
@@ -133,6 +137,9 @@ class TestRabbitMQMessageBus:
         @dataclass
         class UnknownCommand(Command):
             data: str
+
+            def get_validators(self):
+                return {}
 
             def execute(self, uow: UnitOfWork):
                 pass

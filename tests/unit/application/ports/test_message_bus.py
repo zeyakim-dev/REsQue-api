@@ -15,6 +15,9 @@ class FakeCreateUserCommand(Command):
     username: str
     email: str
 
+    def get_validators(self):
+        return {}
+
     def execute(self): ...
 
 
