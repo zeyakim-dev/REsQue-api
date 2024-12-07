@@ -6,6 +6,7 @@ from src.application.commands.auth.login_command import LoginCommand, LoginRespo
 from src.application.commands.auth.register_command import RegisterCommand
 from src.application.ports.repositories.user.user_repository import UserRepository
 from src.domain.user.user import User
+from src.domain.user.values import Password
 from src.infrastructure.persistence.sqlalchemy.repositories.user_repository import (
     SQLAlchemyUserRepository,
 )
@@ -38,7 +39,7 @@ class TestAuthIntegration:
             user_repo = uow.get_repository(UserRepository)
             saved_user = user_repo.find_by_username(username)
             assert isinstance(saved_user, User)
-            assert password_hasher.verify(password, saved_user.hashed_password)
+            assert password_hasher.verify(password, saved_user.hashed_password.value)
 
         # When - 로그인
         login_command = LoginCommand(

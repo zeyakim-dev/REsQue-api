@@ -3,7 +3,7 @@ from uuid import UUID
 import pytest
 from pytest_mock import MockerFixture
 
-from src.infrastructure.uuid.uuid_generator import UUIDv7Generator
+from src.infrastructure.id.uuid_generator import UUIDv7Generator
 
 
 class TestUUIDv7Generator:

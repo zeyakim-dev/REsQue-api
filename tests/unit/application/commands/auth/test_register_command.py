@@ -74,7 +74,7 @@ class TestRegisterCommand:
     def command(self, stub_password_hasher, stub_id_generator) -> RegisterCommand:
         return RegisterCommand(
             username="testuser",
-            password="password123",
+            password="Password123",
             _password_hasher=stub_password_hasher,
             _id_generator=stub_id_generator,
         )

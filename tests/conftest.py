@@ -83,6 +83,6 @@ def token_generator():
 
 @pytest.fixture
 def id_generator():
-    from src.infrastructure.uuid.uuid_generator import UUIDv7Generator
+    from src.infrastructure.id.uuid_generator import UUIDv7Generator
 
     return UUIDv7Generator()

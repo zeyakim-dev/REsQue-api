@@ -1,63 +1,56 @@
 import dataclasses
-from datetime import datetime
-from uuid import UUID
-
 import pytest
-
-from src.domain.user.user import IdGenerator, PasswordHasher, User
-
+from uuid import UUID
+from src.domain.user.user import User
+from src.domain.user.values import Username, HashedPassword
 
 class TestUser:
-    def test_create_user(
-        self,
-        valid_user_info,
-        password_hasher: PasswordHasher,
-        id_generator: IdGenerator,
-    ):
+    def test_create_user(self):
+        """User 엔티티가 올바르게 생성되는지 검증합니다."""
+        # Given
+        id = UUID('12345678-1234-5678-1234-567812345678')
+        username = Username("testuser")
+        hashed_password = HashedPassword("hashed_value")
+
         # When
-        user = User.create(valid_user_info, password_hasher, id_generator)
+        user = User(
+            id=id,
+            username=username,
+            hashed_password=hashed_password
+        )
 
         # Then
-        assert user.username == valid_user_info["username"]
-        assert user.hashed_password == f"hashed_{valid_user_info['password']}"
-        assert user.id == id_generator.generate()
+        assert user.id == id
+        assert user.username == username
+        assert user.hashed_password == hashed_password
 
-    def test_user_is_immutable(self, valid_user_info, password_hasher, id_generator):
+    def test_user_is_immutable(self):
+        """User 엔티티가 불변인지 검증합니다."""
         # Given
-        user = User.create(valid_user_info, password_hasher, id_generator)
+        user = User(
+            id=UUID('12345678-1234-5678-1234-567812345678'),
+            username=Username("testuser"),
+            hashed_password=HashedPassword("hashed_value")
+        )
 
         # When/Then
         with pytest.raises(dataclasses.FrozenInstanceError):
-            user.username = "new_username"
+            user.username = Username("newname")
 
-    def test_verify_password_success(
-        self, valid_user_info, password_hasher, id_generator
-    ):
+    def test_user_equality(self):
+        """동일한 ID를 가진 User 엔티티가 동등한지 검증합니다."""
         # Given
-        user = User.create(valid_user_info, password_hasher, id_generator)
-
-        # When
-        result = user.verify_password(valid_user_info["password"], password_hasher)
-
-        # Then
-        assert result is True
-
-    def test_verify_password_failure(
-        self, valid_user_info, password_hasher, id_generator
-    ):
-        # Given
-        user = User.create(valid_user_info, password_hasher, id_generator)
-
-        # When
-        result = user.verify_password("wrong_password", password_hasher)
-
-        # Then
-        assert result is False
-
-    def test_user_equality(self, valid_user_info, password_hasher, id_generator):
-        # Given
-        user1 = User.create(valid_user_info, password_hasher, id_generator)
-        user2 = User.create(valid_user_info, password_hasher, id_generator)
+        id = UUID('12345678-1234-5678-1234-567812345678')
+        user1 = User(
+            id=id,
+            username=Username("testuser"),
+            hashed_password=HashedPassword("hashed_value")
+        )
+        user2 = User(
+            id=id,
+            username=Username("testuser"),
+            hashed_password=HashedPassword("hashed_value")
+        )
 
         # Then
         assert user1 == user2
