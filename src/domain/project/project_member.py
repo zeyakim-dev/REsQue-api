@@ -24,21 +24,6 @@ class ProjectMember:
     role: Role
     joined_at: datetime
 
-    @staticmethod
-    def create(
-        user_id: UUID,
-        project_id: UUID,
-        role: Role,
-        id_generator: IdGenerator,
-    ) -> "ProjectMember":
-        return ProjectMember(
-            id=id_generator.generate(),
-            user_id=user_id,
-            project_id=project_id,
-            role=role,
-            joined_at=datetime.now(),
-        )
-
     def change_role(self, new_role: Role) -> "ProjectMember":
         return ProjectMember(
             id=self.id,
