@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy.orm import Mapped
 
 from src.domain.user.user import User
+from src.domain.user.values import HashedPassword, Username
 from src.infrastructure.persistence.sqlalchemy.models.users import UserModel
 from src.infrastructure.persistence.sqlalchemy.repositories.user_repository import (
     SQLAlchemyUserRepository,
@@ -86,7 +87,9 @@ class TestSQLAlchemyUserRepository:
 
     @pytest.fixture
     def user_entity(self, user_data: dict) -> User:
-        return User(**user_data)
+        return User(id=user_data['id'],
+                    username=Username(user_data['username']),
+                    hashed_password=HashedPassword(user_data['hashed_password']))
 
     @pytest.fixture
     def stub_model(self, user_data: dict) -> StubUserModel:
@@ -113,8 +116,8 @@ class TestSQLAlchemyUserRepository:
         # Then
         saved_model = stub_session.saved_models.get(user_entity.id)
         assert saved_model is not None
-        assert saved_model.username == user_entity.username
-        assert saved_model.hashed_password == user_entity.hashed_password
+        assert saved_model.username == user_entity.username.value
+        assert saved_model.hashed_password == user_entity.hashed_password.value
         assert stub_session.committed
 
     def test_should_find_user_by_id(
@@ -133,8 +136,8 @@ class TestSQLAlchemyUserRepository:
         # Then
         assert found_user is not None
         assert found_user.id == stub_model.id
-        assert found_user.username == stub_model.username
-        assert found_user.hashed_password == stub_model.hashed_password
+        assert found_user.username.value == stub_model.username
+        assert found_user.hashed_password.value == stub_model.hashed_password
 
     def test_should_find_user_by_username(
         self,
@@ -151,7 +154,7 @@ class TestSQLAlchemyUserRepository:
 
         # Then
         assert found_user is not None
-        assert found_user.username == stub_model.username
+        assert found_user.username.value == stub_model.username
 
     def test_should_check_username_exists(
         self,
