@@ -87,9 +87,11 @@ class TestSQLAlchemyUserRepository:
 
     @pytest.fixture
     def user_entity(self, user_data: dict) -> User:
-        return User(id=user_data['id'],
-                    username=Username(user_data['username']),
-                    hashed_password=HashedPassword(user_data['hashed_password']))
+        return User(
+            id=user_data["id"],
+            username=Username(user_data["username"]),
+            hashed_password=HashedPassword(user_data["hashed_password"]),
+        )
 
     @pytest.fixture
     def stub_model(self, user_data: dict) -> StubUserModel:
