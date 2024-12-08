@@ -3,12 +3,12 @@ from typing import Optional
 from uuid import UUID
 
 from src.application.commands.command import Command
+from src.application.ports.id.id_generator import AbstractIdGenerator
 from src.application.ports.repositories.user.user_repository import UserRepository
+from src.application.ports.security.password_hasher import AbstractPasswordHasher
 from src.application.ports.uow import UnitOfWork
 from src.domain.user.user import User
 from src.domain.user.values import HashedPassword, Password, Username
-from src.infrastructure.id.uuid_generator import UUIDv7Generator
-from src.infrastructure.security.password_hasher import PasswordHasher
 
 
 @dataclass(frozen=True)
@@ -17,8 +17,8 @@ class RegisterCommand(Command[UUID]):
 
     username: str
     password: str
-    _password_hasher: PasswordHasher
-    _id_generator: UUIDv7Generator
+    _password_hasher: AbstractPasswordHasher
+    _id_generator: AbstractIdGenerator
 
     def execute(self, uow: UnitOfWork) -> UUID:
         """사용자 등록을 수행합니다.
