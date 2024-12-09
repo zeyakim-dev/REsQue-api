@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from src.domain.entity import Entity
+from src.domain.shared.aggregate_root import AggregateRoot
+from src.domain.shared.entity import Entity
 from src.domain.user.values import HashedPassword, Username
 
 
 @dataclass(frozen=True)
-class User(Entity):
+class User(AggregateRoot):
     username: Username
     hashed_password: HashedPassword
 

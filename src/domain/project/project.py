@@ -5,11 +5,11 @@ from uuid import UUID
 
 from src.domain.project.project_member import ProjectMember, Role
 from src.domain.project.values import Title, Description, Status
+from src.domain.shared.aggregate_root import AggregateRoot
 
 
 @dataclass(frozen=True)
-class Project:
-    id: UUID
+class Project(AggregateRoot):
     title: Title
     description: Description
     founder_id: UUID

@@ -1,4 +1,4 @@
-from src.domain.domain_exception import DomainException
+from src.domain.shared.domain_exception import DomainException
 
 
 class ProjectDomainException(DomainException):
