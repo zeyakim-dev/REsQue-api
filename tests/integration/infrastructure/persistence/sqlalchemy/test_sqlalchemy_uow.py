@@ -7,7 +7,7 @@ from sqlalchemy import String, create_engine
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, Session, mapped_column, sessionmaker
 
-from src.domain.entity import Entity
+from src.domain.shared.aggregate_root import AggregateRoot
 from src.infrastructure.persistence.sqlalchemy.models.base import Base
 from src.infrastructure.persistence.sqlalchemy.repositories.base_repository import (
     SQLAlchemyRepository,
@@ -16,7 +16,7 @@ from src.infrastructure.persistence.sqlalchemy.uow import SQLAlchemyUnitOfWork
 
 
 # 테스트용 모델과 엔티티
-class TestEntity(Entity):
+class TestEntity(AggregateRoot):
     def __init__(self, id: PyUUID, value: str):
         super().__init__(id)
         self.value = value

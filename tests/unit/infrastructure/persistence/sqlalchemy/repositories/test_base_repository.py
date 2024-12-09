@@ -4,14 +4,14 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from src.domain.entity import Entity
+from src.domain.shared.aggregate_root import AggregateRoot
 from src.infrastructure.persistence.sqlalchemy.repositories.base_repository import (
     SQLAlchemyRepository,
 )
 
 
 @dataclass(frozen=True)
-class FakeEntity(Entity):
+class FakeEntity(AggregateRoot):
     id: UUID
     name: str
 
