@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from src.domain.user.exceptions import (
+from src.domain.member.exceptions import (
     InvalidPasswordException,
     InvalidUsernameException,
 )

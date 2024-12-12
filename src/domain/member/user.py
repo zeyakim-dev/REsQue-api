@@ -3,7 +3,7 @@ from uuid import UUID
 
 from src.domain.shared.aggregate_root import AggregateRoot
 from src.domain.shared.entity import Entity
-from src.domain.user.values import HashedPassword, Username
+from src.domain.member.values import HashedPassword, Username
 
 
 @dataclass(frozen=True)
