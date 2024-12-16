@@ -2,14 +2,14 @@ from abc import abstractmethod
 from typing import Optional
 
 from src.application.ports.repositories.repository import Repository
-from src.domain.user.user import User
+from src.domain.member.entity.member import Member
 
 
-class UserRepository(Repository[User]):
+class MemberRepository(Repository[Member]):
     """User 엔티티를 위한 Repository"""
 
     @abstractmethod
-    def find_by_username(self, username: str) -> Optional[User]:
+    def find_by_username(self, username: str) -> Optional[Member]:
         """사용자명으로 사용자 조회"""
         pass
 
