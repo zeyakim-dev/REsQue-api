@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from src.domain.member.exceptions import (
-    InvalidPasswordException,
+    InvalidPlainPasswordException,
     InvalidUsernameException,
     InvalidEmailException
 )
@@ -51,7 +51,7 @@ class PlainPassword(Value):
 
     def __post_init__(self):
         if not self._is_valid(self.value):
-            raise InvalidPasswordException(
+            raise InvalidPlainPasswordException(
                 f"비밀번호는 {self.MIN_LENGTH}자 이상이며, "
                 "대소문자와 숫자를 포함해야 합니다"
             )
