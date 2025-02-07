@@ -8,8 +8,7 @@
 UserAggregate
 ^^^^^^^^^^^^^
 :책임:
-    * 회원 생명주기 관리(가입/로그인/탈퇴)
-    * 접속 이력 추적
+    * 회원 생명주기 관리(가입/로그인)
     * 계정 상태 관리
 
 :주요 속성:
@@ -18,16 +17,13 @@ UserAggregate
         class User:
             id: UUID
             email: str
-            auth_provider: AuthProvider  # EMAIL/GOOGLE/GITHUB
-            last_active: datetime
-            status: UserStatus  # ACTIVE/INACTIVE/SOFT_DELETED
+            auth_provider: AuthProvider  # EMAIL/GOOGLE
+            status: UserStatus  # ACTIVE/INACTIVE
             workspace: WorkspaceConfig
 
 :관련 이벤트:
     * 회원_가입됨
-    * 회원_로그인됨 
-    * 회원_탈퇴됨
-    * 프로젝트-참여자_추가됨 → workspace 프로젝트 목록 갱신
+    * 회원_로그인됨
 
 프로젝트 애그리게이트
 ---------------------
@@ -35,9 +31,8 @@ UserAggregate
 ProjectAggregate
 ^^^^^^^^^^^^^^^^
 :책임:
-    * 프로젝트 전체 생명주기 관리
-    * 멤버 권한 계층 관리
-    * 참여자 초대 워크플로우
+    * 프로젝트 기본 관리
+    * 멤버 권한 관리
 
 :주요 속성:
     .. code-block:: python
@@ -46,16 +41,12 @@ ProjectAggregate
             id: UUID
             title: str
             owner: UserId
-            members: Dict[UserId, ProjectRole]  # viewer/member/manager
-            status: ProjectLifecycle  # ACTIVE/ARCHIVED/TERMINATED
-            invitation_links: List[InvitationToken]
-            audit_log: List[PermissionChange]
+            members: Dict[UserId, ProjectRole]  # viewer/member
+            status: ProjectLifecycle  # ACTIVE/ARCHIVED
 
 :관련 이벤트:
     * 프로젝트_생성됨
     * 프로젝트-참여자_추가됨
-    * 프로젝트-권한_변경됨
-    * 프로젝트_종료됨 → 관련 알림 배치 전송
 
 요구사항 애그리게이트
 ---------------------
@@ -63,26 +54,22 @@ ProjectAggregate
 RequirementAggregate
 ^^^^^^^^^^^^^^^^^^^^
 :책임:
-    * 요구사항 의존성 그래프 관리
-    * 상태 머신 운영
-    * 완료 조건 검증
+    * 요구사항 기본 CRUD
+    * 상태 관리
 
 :주요 속성:
     .. code-block:: python
 
         class Requirement:
             id: UUID
-            dependencies: List[RequirementId]
-            status_flow: StateMachine
+            title: str
+            description: str
+            status: RequirementStatus  # TODO/IN_PROGRESS/DONE
             assignee: UserId
-            completion_conditions: CompletionPolicy
-            timeline: List[StatusTransition]
 
 :관련 이벤트:
     * 요구사항_등록됨
-    * 요구사항-선행조건_연결됨
     * 요구사항_상태_변경됨
-    * 요구사항_완료됨
 
 협업 애그리게이트
 -----------------
