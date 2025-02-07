@@ -40,6 +40,7 @@ Project
         status: ProjectStatus  # ACTIVE, ARCHIVED
         created_at: datetime
         members: List[ProjectMember]
+        invitations: List[ProjectInvitation]
         
         def add_member(self, user: User, role: ProjectRole) -> None:
             """멤버 추가"""
@@ -52,6 +53,20 @@ Project
         def can_modify(self, user: User) -> bool:
             """사용자의 수정 권한 확인"""
             pass
+
+        def invite_member(self, email: str, role: ProjectRole) -> ProjectInvitation:
+            """멤버 초대"""
+            invitation = ProjectInvitation(
+                id=uuid4(),
+                project_id=self.id,
+                email=email,
+                role=role,
+                status=InvitationStatus.PENDING,
+                expires_at=datetime.utcnow() + timedelta(days=7),
+                created_at=datetime.utcnow()
+            )
+            self.invitations.append(invitation)
+            return invitation
 
 ProjectMember
 ^^^^^^^^^^^^
@@ -67,6 +82,30 @@ ProjectMember
         def change_role(self, new_role: ProjectRole) -> None:
             """역할 변경"""
             pass
+
+ProjectInvitation
+^^^^^^^^^^^^^^^
+.. code-block:: python
+
+    @dataclass
+    class ProjectInvitation:
+        id: UUID
+        project_id: UUID
+        email: str
+        role: ProjectRole
+        status: InvitationStatus  # PENDING, ACCEPTED, EXPIRED
+        expires_at: datetime
+        created_at: datetime
+        
+        def accept(self) -> None:
+            """초대 수락"""
+            if self.is_expired():
+                raise InvitationExpiredError()
+            self.status = InvitationStatus.ACCEPTED
+            
+        def is_expired(self) -> bool:
+            """만료 여부 확인"""
+            return datetime.utcnow() > self.expires_at
 
 요구사항 도메인
 -------------
@@ -112,6 +151,11 @@ Requirement
     - VIEWER: 읽기만 가능
     - MEMBER: 요구사항 생성/수정 가능
     - MANAGER: 프로젝트 설정 변경, 멤버 관리 가능
+* 초대 관련 규칙:
+    - MANAGER 권한을 가진 멤버만 초대 가능
+    - 초대는 7일 후 자동 만료
+    - 이미 멤버인 이메일로는 초대 불가
+    - 대기 중인 초대가 있는 이메일로는 중복 초대 불가
 
 요구사항(Requirement)
 ^^^^^^^^^^^^^^^^^^
@@ -144,4 +188,12 @@ Requirement
     class RequirementStatus(Enum):
         TODO = "TODO"
         IN_PROGRESS = "IN_PROGRESS"
-        DONE = "DONE" 
+        DONE = "DONE"
+
+    class InvitationStatus(Enum):
+        PENDING = "PENDING"
+        ACCEPTED = "ACCEPTED"
+        EXPIRED = "EXPIRED"
+
+    class InvitationExpiredError(Exception):
+        pass 

@@ -25,16 +25,18 @@
 :주요 기능:
     * 프로젝트 CRUD
     * 멤버 권한 관리
-    * 프로젝트 상태 관리
+    * 이메일 초대 관리
 
 :기술 스택:
     * Flask
     * Flask-SQLAlchemy (PostgreSQL)
     * Flask-Caching (Redis)
+    * Flask-Mail (이메일 발송)
     * Flask-Marshmallow (직렬화)
 
 :외부 의존성:
     * 인증 컨텍스트 (사용자 정보)
+    * SMTP 서버 (이메일 발송)
 
 요구사항 관리 컨텍스트
 ---------------------

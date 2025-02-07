@@ -33,6 +33,7 @@ ProjectAggregate
 :책임:
     * 프로젝트 기본 관리
     * 멤버 권한 관리
+    * 초대 관리
 
 :주요 속성:
     .. code-block:: python
@@ -41,12 +42,24 @@ ProjectAggregate
             id: UUID
             title: str
             owner: UserId
-            members: Dict[UserId, ProjectRole]  # viewer/member
+            members: Dict[UserId, ProjectRole]  # viewer/member/manager
             status: ProjectLifecycle  # ACTIVE/ARCHIVED
+            invitations: Dict[str, ProjectInvitation]  # 초대 코드: 초대 정보
+
+        class ProjectInvitation:
+            code: str  # 유니크한 초대 코드
+            email: str  # 초대된 이메일
+            role: ProjectRole  # 부여될 권한
+            inviter: UserId  # 초대한 사람
+            expires_at: datetime  # 만료 시간
+            status: InvitationStatus  # PENDING/ACCEPTED/EXPIRED
 
 :관련 이벤트:
     * 프로젝트_생성됨
     * 프로젝트-참여자_추가됨
+    * 프로젝트-초대장_발송됨
+    * 프로젝트-초대_수락됨
+    * 프로젝트-초대_만료됨
 
 요구사항 애그리게이트
 ---------------------
