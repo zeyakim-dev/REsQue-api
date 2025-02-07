@@ -8,3 +8,6 @@
 
    01_events
    02_aggregates
+   03_bounded_context
+   04_domain_model
+   05_commands_queries
