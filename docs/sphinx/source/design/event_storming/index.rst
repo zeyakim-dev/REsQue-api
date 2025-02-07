@@ -11,3 +11,4 @@
    03_bounded_context
    04_domain_model
    05_commands_queries
+   06_api_endpoints
