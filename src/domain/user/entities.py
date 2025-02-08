@@ -1,7 +1,7 @@
 from dataclasses import dataclass, replace
 from datetime import datetime
 from uuid import UUID
-from src.domain.user.value_objects import AuthProvider, UserStatus
+from src.domain.user.value_objects import AuthProvider, UserStatus, Password
 from src.domain.user.exceptions import InvalidEmailError, InactiveUserError
 import re
 
@@ -19,7 +19,7 @@ class User:
     auth_provider: AuthProvider
     status: UserStatus
     created_at: datetime
-    _password_hash: str = None
+    password: Password = None  # Password 값 객체로 변경
 
     def __post_init__(self):
         """객체 생성 후 유효성 검증"""
@@ -31,20 +31,18 @@ class User:
         if not re.match(email_pattern, self.email):
             raise InvalidEmailError("Invalid email format")
 
-    def authenticate(self, password: str) -> bool:
-        """사용자 인증
-        
-        비활성 상태의 사용자는 인증 불가
-        테스트를 위해 간단한 비밀번호 검증 로직 구현
-        """
+    def authenticate(self, password_hash: str) -> bool:
+        """사용자 인증"""
         if self.status == UserStatus.INACTIVE:
             raise InactiveUserError("Inactive user cannot perform actions")
         
         if self.auth_provider != AuthProvider.EMAIL:
             return False
             
-        # 테스트용 간단한 비밀번호 검증
-        return password == "correct_password"
+        if not self.password:
+            return False
+            
+        return self.password.verify(password_hash)
 
     def update_status(self, new_status: UserStatus) -> 'User':
         """사용자 상태 변경
