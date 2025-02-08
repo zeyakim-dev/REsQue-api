@@ -1,11 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from uuid import UUID
 from src.domain.user.value_objects import AuthProvider, UserStatus
 from src.domain.user.exceptions import InvalidEmailError, InactiveUserError
 import re
 
-@dataclass
+@dataclass(frozen=True)
 class User:
     """사용자 엔티티
     
@@ -19,7 +19,7 @@ class User:
     auth_provider: AuthProvider
     status: UserStatus
     created_at: datetime
-    _password_hash: str = None  # 테스트용 임시 필드
+    _password_hash: str = None
 
     def __post_init__(self):
         """객체 생성 후 유효성 검증"""
@@ -46,11 +46,12 @@ class User:
         # 테스트용 간단한 비밀번호 검증
         return password == "correct_password"
 
-    def update_status(self, new_status: UserStatus) -> None:
+    def update_status(self, new_status: UserStatus) -> 'User':
         """사용자 상태 변경
         
         비활성 상태의 사용자는 상태 변경 불가
+        새로운 User 인스턴스를 반환
         """
         if self.status == UserStatus.INACTIVE:
             raise InactiveUserError("Inactive user cannot perform actions")
-        self.status = new_status
+        return replace(self, status=new_status)
