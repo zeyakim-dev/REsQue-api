@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 from src.domain.user.entities import User
 from src.domain.user.value_objects import AuthProvider, UserStatus
@@ -22,7 +22,7 @@ class TestUser:
             "email": "test@example.com",
             "auth_provider": AuthProvider.EMAIL,
             "status": UserStatus.ACTIVE,
-            "created_at": datetime.now(datetime.UTC)
+            "created_at": datetime.now(timezone.utc)
         }
 
     class TestUserCreation:
