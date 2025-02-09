@@ -21,6 +21,6 @@ class Password:
         if not self.hashed_value:
             raise ValueError("Password hash cannot be empty")
 
-    def verify(self, password_hash: str) -> bool:
-        """해시된 비밀번호 비교"""
-        return self.hashed_value == password_hash 
+    def equals(self, other: 'Password') -> bool:
+        """비밀번호 일치 여부 검증"""
+        return self.hashed_value == other.hashed_value 
