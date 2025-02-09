@@ -9,6 +9,17 @@ class TestBcryptPasswordHasher:
         """테스트용 해셔 인스턴스"""
         return BcryptPasswordHasher(rounds=4)  # 테스트용으로 라운드 수 감소
     
+    def test_hash_with_empty_password(self, hasher):
+        """빈 비밀번호 해시화 시도"""
+        with pytest.raises(ValueError):
+            hasher.hash("")
+    
+    def test_verify_with_empty_inputs(self, hasher):
+        """빈 입력값으로 검증 시도"""
+        assert not hasher.verify("", "")
+        assert not hasher.verify("password", "")
+        assert not hasher.verify("", "hash")
+    
     def test_hash_and_verify(self, hasher):
         """해시 생성 및 검증 테스트
         
