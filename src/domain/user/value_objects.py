@@ -19,8 +19,4 @@ class Password:
     def __post_init__(self):
         """비밀번호 정책 검증"""
         if not self.hashed_value:
-            raise ValueError("Password hash cannot be empty")
-
-    def equals(self, other: 'Password') -> bool:
-        """비밀번호 일치 여부 검증"""
-        return self.hashed_value == other.hashed_value 
+            raise ValueError("Password hash cannot be empty") 
