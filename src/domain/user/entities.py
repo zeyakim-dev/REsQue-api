@@ -3,7 +3,6 @@ from datetime import datetime
 from uuid import UUID
 from src.domain.user.value_objects import AuthProvider, UserStatus, Password
 from src.domain.user.exceptions import InvalidEmailError, InactiveUserError
-from src.infrastructure.security.password_hasher import BcryptPasswordHasher
 import re
 
 @dataclass(frozen=True)
@@ -32,22 +31,15 @@ class User:
         if not re.match(email_pattern, self.email):
             raise InvalidEmailError("Invalid email format")
 
-    def authenticate(self, password: Password) -> bool:
-        """사용자 인증
-        
-        Args:
-            password: 검증할 비밀번호 (이미 해시된)
-        """
+    def can_authenticate(self) -> bool:
+        """인증 가능 여부 확인"""
         if self.status == UserStatus.INACTIVE:
             raise InactiveUserError("Inactive user cannot perform actions")
         
         if self.auth_provider != AuthProvider.EMAIL:
             return False
             
-        if not self.password:
-            return False
-            
-        return self.password.equals(password)
+        return self.password is not None
 
     def update_status(self, new_status: UserStatus) -> 'User':
         """사용자 상태 변경

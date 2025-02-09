@@ -12,7 +12,8 @@ def authenticate_user(user: User, plain_password: str, password_hasher: Password
     """
     if not user or not plain_password:
         return False
+
+    if not user.can_authenticate():
+        return False
         
-    hashed = password_hasher.hash(plain_password)
-    password = Password(hashed_value=hashed)
-    return user.authenticate(password)
+    return password_hasher.verify(plain_password, user.password.hashed_value)
