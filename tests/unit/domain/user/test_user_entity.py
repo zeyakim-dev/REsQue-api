@@ -15,25 +15,6 @@ class TestUser:
     - 비활성 상태의 사용자는 어떤 작업도 수행할 수 없음
     """
     
-    @pytest.fixture
-    def hasher(self):
-        return BcryptPasswordHasher(rounds=4)
-    
-    @pytest.fixture
-    def valid_user_data(self, hasher):
-        """테스트용 사용자 데이터"""
-        plain_password = "secure_password123"
-        hashed_password = hasher.hash(plain_password)
-        
-        return {
-            "id": uuid4(),
-            "email": "test@example.com",
-            "auth_provider": AuthProvider.EMAIL,
-            "status": UserStatus.ACTIVE,
-            "created_at": datetime.now(timezone.utc),
-            "password": Password(hashed_value=hashed_password)
-        }
-
     class TestUserCreation:
         """사용자 생성 테스트"""
         
@@ -92,29 +73,42 @@ class TestUser:
     class TestUserAuthentication:
         """사용자 인증 테스트"""
         
-        def test_authenticate_email_user(self, valid_user_data, hasher):
-            """이메일 사용자 인증 테스트"""
+        def test_can_authenticate_email_user(self, valid_user_data):
+            """이메일 사용자 인증 가능 여부 테스트"""
             # Given
             user = User(**valid_user_data)
-            plain_password = "secure_password123"
             
             # When
-            is_authenticated = user.authenticate(plain_password, hasher)
+            can_auth = user.can_authenticate()
             
             # Then
-            assert is_authenticated is True
+            assert can_auth is True
         
-        def test_authenticate_with_wrong_password(self, valid_user_data, hasher):
-            """잘못된 비밀번호로 인증 시도"""
+        def test_cannot_authenticate_oauth_user(self, valid_user_data):
+            """OAuth 사용자 인증 불가능 테스트"""
             # Given
-            user = User(**valid_user_data)
-            wrong_password = "wrong_password"
+            oauth_user = User(**{
+                **valid_user_data,
+                "auth_provider": AuthProvider.GOOGLE
+            })
             
             # When
-            is_authenticated = user.authenticate(wrong_password, hasher)
+            can_auth = oauth_user.can_authenticate()
             
             # Then
-            assert is_authenticated is False
+            assert can_auth is False
+        
+        def test_cannot_authenticate_inactive_user(self, valid_user_data):
+            """비활성 사용자 인증 불가능 테스트"""
+            # Given
+            inactive_user = User(**{
+                **valid_user_data,
+                "status": UserStatus.INACTIVE
+            })
+            
+            # When/Then
+            with pytest.raises(InactiveUserError):
+                inactive_user.can_authenticate()
 
     class TestUserStatus:
         """사용자 상태 관리 테스트"""
@@ -155,7 +149,7 @@ class TestUser:
             
             # When/Then
             with pytest.raises(InactiveUserError) as exc_info:
-                user.authenticate("any_password")
+                user.can_authenticate()
             assert "Inactive user cannot perform actions" in str(exc_info.value)
             
             with pytest.raises(InactiveUserError) as exc_info:
