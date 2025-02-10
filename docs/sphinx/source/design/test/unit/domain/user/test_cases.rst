@@ -2,129 +2,106 @@
 User 도메인 테스트
 ===================
 
-TestUserCreation
----------------
+TestUser
+-------
 
-test_create_user_with_valid_email
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:Arrange:
-    * UUID 생성
-    * 유효한 이메일 준비
-    * AuthProvider.EMAIL 설정
-    * UserStatus.ACTIVE 설정
-    * 현재 시간 준비
+사용자 생성 테스트 (TestUserCreation)
+"""""""""""""""""""""""""""""""""
 
-:Act:
-    * User 엔티티 생성
+이메일 사용자 생성 (test_create_user_with_valid_email)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:시나리오:
+    * 유효한 이메일로 사용자 생성
+    * 생성된 사용자의 속성 검증
 
-:Assert:
-    * id가 일치하는지 확인
-    * email이 일치하는지 확인
-    * auth_provider가 EMAIL인지 확인
-    * status가 ACTIVE인지 확인
+:검증 항목:
+    * id가 일치
+    * email이 일치
+    * auth_provider가 EMAIL
+    * status가 ACTIVE
 
-test_create_user_with_invalid_email
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:Arrange:
-    * 잘못된 형식의 이메일 준비
-    * 기타 필수 속성 준비
+잘못된 이메일 형식 (test_create_user_with_invalid_email)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:시나리오:
+    * 잘못된 이메일 형식으로 사용자 생성 시도
 
-:Act:
-    * User 엔티티 생성 시도
+:검증 항목:
+    * InvalidEmailError 예외 발생
+    * "Invalid email format" 메시지 포함
 
-:Assert:
-    * InvalidEmailError 예외 발생 확인
-    * 에러 메시지 검증
+OAuth 사용자 생성 (test_create_oauth_user)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:시나리오:
+    * Google OAuth 제공자로 사용자 생성
+    * OAuth 관련 속성 검증
 
-test_create_oauth_user
-^^^^^^^^^^^^^^^^^^^^
-:Arrange:
-    * UUID 생성
-    * Gmail 이메일 준비
-    * AuthProvider.GOOGLE 설정
-    * UserStatus.ACTIVE 설정
+:검증 항목:
+    * auth_provider가 GOOGLE
+    * email이 gmail.com 도메인
 
-:Act:
-    * User 엔티티 생성
+인증 관련 테스트 (TestUserAuthentication)
+"""""""""""""""""""""""""""""""""""""
 
-:Assert:
-    * auth_provider가 GOOGLE인지 확인
-    * email 도메인이 gmail.com인지 확인
+이메일 사용자 인증 가능 여부 (test_can_authenticate_email_user)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:시나리오:
+    * 활성 상태의 이메일 사용자 생성
+    * 인증 가능 여부 확인
 
-TestUserAuthentication
---------------------
+:검증 항목:
+    * 이메일 사용자는 인증 가능
 
-test_authenticate_email_user
-^^^^^^^^^^^^^^^^^^^^^^^^^
-:Arrange:
-    * 이메일 사용자 생성
-    * 올바른 비밀번호 해시 준비
+OAuth 사용자 인증 불가능 (test_cannot_authenticate_oauth_user)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:시나리오:
+    * Google OAuth 사용자 생성
+    * 인증 가능 여부 확인
 
-:Act:
-    * authenticate() 메서드 호출
+:검증 항목:
+    * OAuth 사용자는 인증 불가능
 
-:Assert:
-    * 인증 성공 여부 확인
+상태 관리 테스트 (TestUserStatus)
+""""""""""""""""""""""""""""
 
-test_authenticate_oauth_user
-^^^^^^^^^^^^^^^^^^^^^^^^^
-:Arrange:
-    * OAuth 사용자 생성
-    * 유효한 OAuth 토큰 준비
-
-:Act:
-    * authenticate() 메서드 호출
-
-:Assert:
-    * OAuth 인증 성공 여부 확인
-
-TestUserStatus
-------------
-
-test_deactivate_user
-^^^^^^^^^^^^^^^^^^
-:Arrange:
-    * ACTIVE 상태의 사용자 생성
-
-:Act:
-    * update_status(UserStatus.INACTIVE) 호출
-
-:Assert:
-    * status가 INACTIVE로 변경되었는지 확인
-
-test_inactive_user_operations
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-:Arrange:
-    * INACTIVE 상태의 사용자 생성
-
-:Act:
-    * 각종 작업 수행 시도
-
-:Assert:
-    * 모든 작업에서 적절한 예외가 발생하는지 확인
-
-test_duplicate_email_registration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:Arrange:
-    * 기존 사용자 생성
-    * 동일한 이메일로 새 사용자 데이터 준비
-
-:Act:
-    * 동일 이메일로 사용자 생성 시도
-
-:Assert:
-    * DuplicateEmailError 발생 확인
-
-test_user_withdrawal
-^^^^^^^^^^^^^^^^
-:Arrange:
+사용자 비활성화 (test_deactivate_user)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:시나리오:
     * 활성 상태의 사용자 생성
-    * 사용자의 프로젝트 참여 정보 생성
+    * 비활성화 상태로 변경
+    * 새로운 User 인스턴스 검증
 
-:Act:
-    * withdraw() 메서드 호출
+:검증 항목:
+    * 원본 객체는 변경되지 않음
+    * 새 인스턴스의 상태가 변경됨
+    * 다른 속성들은 동일하게 유지
 
-:Assert:
-    * status가 INACTIVE로 변경
-    * 프로젝트 목록에서 제외 확인
-    * 이벤트 발생 확인 
+비활성 사용자 작업 제한 (test_inactive_user_operations)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:시나리오:
+    * 비활성 상태의 사용자 생성
+    * 인증 시도
+    * 상태 변경 시도
+
+:검증 항목:
+    * 모든 작업에서 InactiveUserError 발생
+    * 적절한 에러 메시지 포함
+
+테스트 설계 원칙
+--------------
+
+책임 분리
+^^^^^^^^
+* 생성: 객체 생성과 유효성 검증
+* 인증: 인증 가능 여부 검증
+* 상태: 상태 변경과 제약사항 검증
+
+테스트 격리
+^^^^^^^^^
+* fixture를 통한 테스트 데이터 관리
+* 각 테스트는 독립적으로 실행 가능
+
+테스트 가독성
+^^^^^^^^^^^
+* Given-When-Then 패턴 사용
+* 명확한 시나리오 문서화
+* 검증 항목 명시 
