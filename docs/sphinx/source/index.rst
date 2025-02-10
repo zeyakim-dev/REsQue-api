@@ -25,7 +25,6 @@ REsQue API
    :maxdepth: 2
    :caption: 설계 문서
 
-   design/domain/index
    design/test/index
    design/domain/user/password_policy
 
@@ -33,13 +32,13 @@ REsQue API
 ----
 
 설계 문서
-^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 * 도메인 설계
 * 테스트 설계
 * 보안 정책
 
 테스트 문서
-^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 * 단위 테스트
 * 통합 테스트
 * 성능 테스트
