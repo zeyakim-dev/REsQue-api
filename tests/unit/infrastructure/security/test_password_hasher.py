@@ -1,5 +1,5 @@
 import pytest
-from src.infrastructure.security.password_hasher import BcryptPasswordHasher
+from resque_api.infrastructure.security.password_hasher import BcryptPasswordHasher
 import secrets
 
 class TestBcryptPasswordHasher:

@@ -1,11 +1,11 @@
 import pytest
 from datetime import datetime, timezone
 from uuid import uuid4
-from src.domain.user.value_objects import AuthProvider, UserStatus, Password
-from src.infrastructure.security.password_hasher import BcryptPasswordHasher
-from src.domain.project.entities import Project
-from src.domain.project.value_objects import ProjectStatus
-from src.domain.user.entities import User
+from resque_api.domain.user.value_objects import AuthProvider, UserStatus, Password
+from resque_api.infrastructure.security.password_hasher import BcryptPasswordHasher
+from resque_api.domain.project.entities import Project
+from resque_api.domain.project.value_objects import ProjectStatus
+from resque_api.domain.user.entities import User
 
 @pytest.fixture
 def hasher():
