@@ -1,8 +1,8 @@
 from dataclasses import dataclass, replace
 from datetime import datetime
 from uuid import UUID
-from src.domain.user.value_objects import AuthProvider, UserStatus, Password
-from src.domain.user.exceptions import InvalidEmailError, InactiveUserError
+from resque_api.domain.user.value_objects import AuthProvider, UserStatus, Password
+from resque_api.domain.user.exceptions import InvalidEmailError, InactiveUserError
 import re
 
 @dataclass(frozen=True)

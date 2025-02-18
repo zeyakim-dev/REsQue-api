@@ -1,10 +1,10 @@
 import pytest
 from datetime import datetime, timezone, timedelta
 from uuid import UUID, uuid4
-from src.domain.project.entities import Project
-from src.domain.project.value_objects import ProjectStatus, ProjectRole
-from src.domain.project.exceptions import InvalidTitleError, DuplicateMemberError
-from src.domain.user.entities import User
+from resque_api.domain.project.entities import Project
+from resque_api.domain.project.value_objects import ProjectStatus, ProjectRole
+from resque_api.domain.project.exceptions import InvalidTitleError, DuplicateMemberError
+from resque_api.domain.user.entities import User
 
 class TestProject:
     """Project 엔티티 테스트"""

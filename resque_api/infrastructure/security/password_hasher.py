@@ -1,5 +1,5 @@
 import bcrypt
-from src.application.ports.security import PasswordHasher
+from resque_api.application.ports.security import PasswordHasher
 
 class BcryptPasswordHasher(PasswordHasher):
     """Bcrypt 기반 비밀번호 해시 처리 구현"""

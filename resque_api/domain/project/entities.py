@@ -2,13 +2,13 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import List
 from uuid import UUID
-from src.domain.project.value_objects import (
+from resque_api.domain.project.value_objects import (
     ProjectStatus, ProjectRole, ProjectMember, ProjectInvitation
 )
-from src.domain.project.exceptions import (
+from resque_api.domain.project.exceptions import (
     InvalidTitleError, DuplicateMemberError, InvalidProjectStateError
 )
-from src.domain.user.entities import User
+from resque_api.domain.user.entities import User
 
 @dataclass(frozen=True)
 class Project:
