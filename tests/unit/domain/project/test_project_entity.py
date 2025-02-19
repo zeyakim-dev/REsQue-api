@@ -5,6 +5,7 @@ from resque_api.domain.project.entities import Project
 from resque_api.domain.project.value_objects import InvitationStatus, ProjectStatus, ProjectRole
 from resque_api.domain.project.exceptions import AlreadyAcceptedInvitationError, ExpiredInvitationError, InvalidTitleError, DuplicateMemberError
 from resque_api.domain.user.entities import User
+from dataclasses import replace
 
 class TestProject:
     """Project 엔티티 테스트"""
@@ -137,9 +138,9 @@ class TestProjectInvitationAcceptance:
         )
         
         # 기존 초대를 만료된 초대로 교체 (테스트를 위해 invitations 리스트 직접 수정)
-        project_with_expired_invite = valid_project._replace(
-            invitations=[inv if inv.code != invitation.code else expired_invitation 
-                         for inv in valid_project.invitations]
+        project_with_expired_invite = replace(
+            valid_project,
+            invitations={invitation.code: expired_invitation}
         )
         
         # 초대 수락 시도할 사용자 생성

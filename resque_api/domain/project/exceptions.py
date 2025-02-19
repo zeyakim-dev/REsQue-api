@@ -28,5 +28,9 @@ class AlreadyAcceptedInvitationError(Exception):
 
 class InvalidInvitationStatusError(Exception):
     """잘못된 초대 상태 변경 시도 예외"""
+    pass
+
+class InvalidInvitationCodeError(Exception):
+    """잘못된 초대 코드 사용 시 예외"""
     pass 
 

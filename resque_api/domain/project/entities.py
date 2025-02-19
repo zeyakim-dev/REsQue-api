@@ -1,14 +1,15 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from typing import List
 from uuid import UUID
 from resque_api.domain.project.value_objects import (
-    ProjectStatus, ProjectRole, ProjectMember, ProjectInvitation
+    InvitationStatus, ProjectStatus, ProjectRole, ProjectMember, ProjectInvitation
 )
 from resque_api.domain.project.exceptions import (
-    InvalidTitleError, DuplicateMemberError, InvalidProjectStateError, DuplicateInvitationError, InvalidRoleError
+    InvalidTitleError, DuplicateMemberError, InvalidProjectStateError, DuplicateInvitationError, InvalidRoleError, InvalidInvitationCodeError
 )
 from resque_api.domain.user.entities import User
+import secrets
 
 @dataclass(frozen=True)
 class Project:
@@ -20,7 +21,7 @@ class Project:
     owner: User
     created_at: datetime
     members: List[ProjectMember] = field(default_factory=list)
-    invitations: List[ProjectInvitation] = field(default_factory=list)
+    invitations: dict[str, ProjectInvitation] = field(default_factory=dict)
 
     def __post_init__(self):
         """생성 시 유효성 검증"""
@@ -70,7 +71,7 @@ class Project:
             members=[*self.members, ProjectMember(user, role)]
         )
 
-    def invite_member(self, email: str, role: ProjectRole) -> ProjectInvitation:
+    def invite_member(self, email: str, role: ProjectRole) -> 'Project':
         """멤버 초대
         
         Args:
@@ -80,7 +81,7 @@ class Project:
         if self.status == ProjectStatus.ARCHIVED:
             raise InvalidProjectStateError("Cannot invite to archived project")
         
-        if any(inv.email == email for inv in self.invitations):
+        if email in {inv.email for inv in self.invitations.values()}:
             raise DuplicateInvitationError(f"{email} already invited")
         
         if role not in [ProjectRole.MEMBER, ProjectRole.VIEWER]:
@@ -89,11 +90,38 @@ class Project:
         invitation = ProjectInvitation(
             email=email,
             role=role,
-            expires_at=datetime.now(tz=self.created_at.tzinfo) + timedelta(days=7)
+            expires_at=datetime.now(tz=self.created_at.tzinfo) + timedelta(days=7),
+            status=InvitationStatus.PENDING,
+            code=secrets.token_urlsafe(32)
         )
 
-        self.invitations.append(invitation)
-        return invitation
+        if invitation.code in self.invitations:
+            raise DuplicateInvitationError("Invitation code collision detected")
+            
+        new_invitations = {**self.invitations, invitation.code: invitation}
+        return replace(self, invitations=new_invitations)
+
+    def accept_invitation(self, code: str, user: User) -> 'Project':
+        invitation = self.invitations.get(code)
+        if not invitation:
+            raise InvalidInvitationCodeError("Invalid invitation code")
+        
+        if not invitation.email == user.email:
+            # TODO New ERROR
+            ...
+        new_member = ProjectMember(
+            user=user,
+            role=invitation.role
+        )
+
+        updated_invitation = replace(invitation, status=InvitationStatus.ACCEPTED)
+        new_invitations = {**self.invitations, code: updated_invitation}
+        
+        return replace(
+            self,
+            members=[*self.members, new_member],
+            invitations=new_invitations
+        )
 
     def can_modify(self, user: User) -> bool:
         """수정 권한 확인
