@@ -13,6 +13,13 @@ class ProjectRole(Enum):
     MEMBER = "MEMBER"
     VIEWER = "VIEWER"
 
+class InvitationStatus(Enum):
+    """초대 상태"""
+    PENDING = "PENDING"    # 초대 발송 후 대기 중
+    ACCEPTED = "ACCEPTED"  # 초대 수락 완료
+    EXPIRED = "EXPIRED"    # 초대 만료
+    REVOKED = "REVOKED"    # 초대 취소
+
 @dataclass(frozen=True)
 class ProjectMember:
     """프로젝트 멤버 값 객체"""
@@ -25,3 +32,4 @@ class ProjectInvitation:
     email: str
     role: ProjectRole
     expires_at: datetime 
+    status: InvitationStatus = InvitationStatus.PENDING
