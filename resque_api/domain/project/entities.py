@@ -6,7 +6,7 @@ from resque_api.domain.project.value_objects import (
     ProjectStatus, ProjectRole, ProjectMember, ProjectInvitation
 )
 from resque_api.domain.project.exceptions import (
-    InvalidTitleError, DuplicateMemberError, InvalidProjectStateError
+    InvalidTitleError, DuplicateMemberError, InvalidProjectStateError, DuplicateInvitationError, InvalidRoleError
 )
 from resque_api.domain.user.entities import User
 
@@ -20,6 +20,7 @@ class Project:
     owner: User
     created_at: datetime
     members: List[ProjectMember] = field(default_factory=list)
+    invitations: List[ProjectInvitation] = field(default_factory=list)
 
     def __post_init__(self):
         """생성 시 유효성 검증"""
@@ -78,12 +79,21 @@ class Project:
         """
         if self.status == ProjectStatus.ARCHIVED:
             raise InvalidProjectStateError("Cannot invite to archived project")
+        
+        if any(inv.email == email for inv in self.invitations):
+            raise DuplicateInvitationError(f"{email} already invited")
+        
+        if role not in [ProjectRole.MEMBER, ProjectRole.VIEWER]:
+            raise InvalidRoleError("Manager role cannot be invited")
 
-        return ProjectInvitation(
+        invitation = ProjectInvitation(
             email=email,
             role=role,
             expires_at=datetime.now(tz=self.created_at.tzinfo) + timedelta(days=7)
         )
+
+        self.invitations.append(invitation)
+        return invitation
 
     def can_modify(self, user: User) -> bool:
         """수정 권한 확인

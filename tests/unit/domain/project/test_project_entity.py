@@ -71,59 +71,63 @@ class TestProject:
             # When/Then
             with pytest.raises(DuplicateMemberError):
                 valid_project.add_member(valid_user, ProjectRole.MEMBER)
-        
-        def test_invite_member(self, valid_project):
-            """멤버 초대 테스트"""
-            # Given
-            invite_email = "invite@example.com"
-            
-            # When
-            invitation = valid_project.invite_member(invite_email, ProjectRole.MEMBER)
-            
-            # Then
-            assert invitation.email == invite_email
-            assert invitation.role == ProjectRole.MEMBER
-            assert invitation.expires_at > datetime.now(timezone.utc)
-            assert invitation.expires_at < datetime.now(timezone.utc) + timedelta(days=8)
+
+class TestProjectInvitationManagement:
+    """초대 관리 테스트"""
     
-    class TestProjectPermissions:
-        """권한 관리 테스트"""
+    def test_create_invitation(self, valid_project: Project):
+        """초대 생성 테스트"""
+        # Given
+        invite_email = "invite@example.com"
         
-        def test_can_modify(self, valid_project, valid_user):
-            """수정 권한 확인 테스트"""
-            # Given
-            viewer = User(
-                id=uuid4(),
-                email="viewer@example.com",
-                auth_provider="EMAIL",
-                status="ACTIVE",
-                created_at=datetime.now(timezone.utc)
-            )
-            project_with_viewer = valid_project.add_member(viewer, ProjectRole.VIEWER)
-            
-            # Then
-            assert project_with_viewer.can_modify(valid_user)  # manager
-            assert not project_with_viewer.can_modify(viewer)  # viewer
-            
-            # 비멤버
-            non_member = User(
-                id=uuid4(),
-                email="non@example.com",
-                auth_provider="EMAIL",
-                status="ACTIVE",
-                created_at=datetime.now(timezone.utc)
-            )
-            assert not project_with_viewer.can_modify(non_member)
+        # When
+        invitation = valid_project.invite_member(invite_email, ProjectRole.MEMBER)
+        
+        # Then
+        assert invitation.email == invite_email
+        assert invitation.role == ProjectRole.MEMBER
+        assert invitation.expires_at > datetime.now(timezone.utc)
+        assert invitation.expires_at < datetime.now(timezone.utc) + timedelta(days=8)
+        assert any(invite.email == invite_email for invite in valid_project.invitations)
+
+class TestProjectPermissions:
+    """권한 관리 테스트"""
     
-    class TestProjectStatus:
-        """상태 관리 테스트"""
+    def test_can_modify(self, valid_project, valid_user):
+        """수정 권한 확인 테스트"""
+        # Given
+        viewer = User(
+            id=uuid4(),
+            email="viewer@example.com",
+            auth_provider="EMAIL",
+            status="ACTIVE",
+            created_at=datetime.now(timezone.utc)
+        )
+        project_with_viewer = valid_project.add_member(viewer, ProjectRole.VIEWER)
         
-        def test_archive_project(self, valid_project, valid_user):
-            """프로젝트 보관 테스트"""
-            # When
-            archived_project = valid_project.update_status(ProjectStatus.ARCHIVED)
-            
-            # Then
-            assert archived_project.status == ProjectStatus.ARCHIVED
-            assert not archived_project.can_modify(valid_user)
-            assert archived_project != valid_project  # 불변성 검증 
+        # Then
+        assert project_with_viewer.can_modify(valid_user)  # manager
+        assert not project_with_viewer.can_modify(viewer)  # viewer
+        
+        # 비멤버
+        non_member = User(
+            id=uuid4(),
+            email="non@example.com",
+            auth_provider="EMAIL",
+            status="ACTIVE",
+            created_at=datetime.now(timezone.utc)
+        )
+        assert not project_with_viewer.can_modify(non_member)
+
+class TestProjectStatus:
+    """상태 관리 테스트"""
+    
+    def test_archive_project(self, valid_project, valid_user):
+        """프로젝트 보관 테스트"""
+        # When
+        archived_project = valid_project.update_status(ProjectStatus.ARCHIVED)
+        
+        # Then
+        assert archived_project.status == ProjectStatus.ARCHIVED
+        assert not archived_project.can_modify(valid_user)
+        assert archived_project != valid_project  # 불변성 검증 
