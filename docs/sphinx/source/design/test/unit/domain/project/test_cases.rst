@@ -56,6 +56,19 @@ TestProject
     * 만료 시간이 7일 후로 설정
     * 중복 초대 처리
 
+test_invite_acceptance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:시나리오:
+    * 유효한 초대 코드로 수락 시도
+    * 만료된 초대 코드로 수락 시도
+    * 이미 수락된 초대 코드로 재시도
+
+:검증 항목:
+    * 유효한 경우 멤버로 추가되고 초대 상태가 ACCEPTED로 변경됨
+    * 만료된 경우 ExpiredInvitationError 발생
+    * 중복 수락 시 AlreadyAcceptedInvitationError 발생
+
+
 권한 관리 테스트 (TestProjectPermissions)
 """"""""""""""""""""""""""""""""""
 
