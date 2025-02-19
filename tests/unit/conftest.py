@@ -52,6 +52,6 @@ def valid_project_data(valid_user):
     }
 
 @pytest.fixture
-def valid_project(valid_project_data):
+def valid_project(valid_project_data) -> Project:
     """테스트용 프로젝트"""
     return Project(**valid_project_data) 
