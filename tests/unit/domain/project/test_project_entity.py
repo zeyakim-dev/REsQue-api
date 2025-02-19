@@ -2,8 +2,8 @@ import pytest
 from datetime import datetime, timezone, timedelta
 from uuid import UUID, uuid4
 from resque_api.domain.project.entities import Project
-from resque_api.domain.project.value_objects import ProjectStatus, ProjectRole
-from resque_api.domain.project.exceptions import InvalidTitleError, DuplicateMemberError
+from resque_api.domain.project.value_objects import InvitationStatus, ProjectStatus, ProjectRole
+from resque_api.domain.project.exceptions import AlreadyAcceptedInvitationError, ExpiredInvitationError, InvalidTitleError, DuplicateMemberError
 from resque_api.domain.user.entities import User
 
 class TestProject:
@@ -89,6 +89,105 @@ class TestProjectInvitationManagement:
         assert invitation.expires_at > datetime.now(timezone.utc)
         assert invitation.expires_at < datetime.now(timezone.utc) + timedelta(days=8)
         assert any(invite.email == invite_email for invite in valid_project.invitations)
+
+class TestProjectInvitationAcceptance:
+    """초대 수락 테스트"""
+    
+    def test_invite_acceptance(self, valid_project: Project, valid_user):
+        """유효한 초대 코드 수락 테스트"""
+        # Given
+        invite_email = "new@example.com"
+        invitation = valid_project.invite_member(invite_email, ProjectRole.MEMBER)
+        
+        new_user = User(
+            id=uuid4(),
+            email=invite_email,
+            auth_provider="EMAIL",
+            status="ACTIVE",
+            created_at=datetime.now(timezone.utc)
+        )
+        
+        # When
+        updated_project = valid_project.accept_invitation(invitation.code, new_user)
+        
+        # Then
+        # 멤버가 추가되었는지 확인
+        assert any(
+            member.user == new_user and member.role == ProjectRole.MEMBER
+            for member in updated_project.members
+        )
+        
+        # 초대 상태가 ACCEPTED로 변경되었는지 확인
+        assert any(
+            invite.code == invitation.code and invite.status == InvitationStatus.ACCEPTED
+            for invite in updated_project.invitations
+        )
+    
+    def test_expired_invitation_acceptance(self, valid_project: Project):
+        """만료된 초대 코드 수락 시도"""
+        # Given
+        invite_email = "expired@example.com"
+        
+        # 초대 생성 후 만료시키기
+        invitation = valid_project.invite_member(invite_email, ProjectRole.MEMBER)
+        
+        # 초대 만료 상태로 직접 설정 (테스트를 위한 조작)
+        expired_invitation = invitation._replace(
+            expires_at=datetime.now(timezone.utc) - timedelta(days=1)
+        )
+        
+        # 기존 초대를 만료된 초대로 교체 (테스트를 위해 invitations 리스트 직접 수정)
+        project_with_expired_invite = valid_project._replace(
+            invitations=[inv if inv.code != invitation.code else expired_invitation 
+                         for inv in valid_project.invitations]
+        )
+        
+        # 초대 수락 시도할 사용자 생성
+        new_user = User(
+            id=uuid4(),
+            email=invite_email,
+            auth_provider="EMAIL",
+            status="ACTIVE",
+            created_at=datetime.now(timezone.utc)
+        )
+        
+        # When/Then
+        with pytest.raises(ExpiredInvitationError) as exc_info:
+            project_with_expired_invite.accept_invitation(expired_invitation.code, new_user)
+        
+        assert "Invitation has expired" in str(exc_info.value)
+    
+    def test_already_accepted_invitation(self, valid_project: Project):
+        """이미 수락된 초대 코드로 재시도"""
+        # Given
+        invite_email = "accepted@example.com"
+        invitation = valid_project.invite_member(invite_email, ProjectRole.MEMBER)
+        
+        # 첫 번째 사용자가 초대 수락
+        first_user = User(
+            id=uuid4(),
+            email=invite_email,
+            auth_provider="EMAIL",
+            status="ACTIVE",
+            created_at=datetime.now(timezone.utc)
+        )
+        
+        updated_project = valid_project.accept_invitation(invitation.code, first_user)
+        
+        # 두 번째 사용자가 동일한 코드로 수락 시도
+        second_user = User(
+            id=uuid4(),
+            email="another_" + invite_email,
+            auth_provider="EMAIL",
+            status="ACTIVE",
+            created_at=datetime.now(timezone.utc)
+        )
+        
+        # When/Then
+        with pytest.raises(AlreadyAcceptedInvitationError) as exc_info:
+            updated_project.accept_invitation(invitation.code, second_user)
+        
+        assert "Invitation has already been accepted" in str(exc_info.value)
 
 class TestProjectPermissions:
     """권한 관리 테스트"""
