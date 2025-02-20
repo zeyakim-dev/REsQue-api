@@ -5,7 +5,7 @@ from typing import List, Optional, Self
 
 from resque_api.domain.project.entities import ProjectMember
 from resque_api.domain.requirement.value_objects import RequirementStatus, RequirementPriority
-from resque_api.domain.requirement.exceptions import InvalidStatusTransitionError, RequirementPriorityError
+from resque_api.domain.requirement.exceptions import RequirementPriorityError
 
 
 @dataclass(frozen=True)
@@ -39,10 +39,12 @@ class Requirement:
 
     def change_status(self, new_status: RequirementStatus) -> Self:
         """요구사항 상태 변경"""
-        return replace(self, status=new_status)
+        return replace(self, status=self.status.change_status(new_status))
 
     def set_priority(self, priority: int) -> Self:
         """우선순위 설정"""
+        if not 1 <= priority <= 3:
+            raise RequirementPriorityError("Priority must be between 1 and 3")
         return replace(self, priority=priority)
 
     def add_tag(self, tag: str) -> Self:
@@ -71,13 +73,15 @@ class Requirement:
         )
         return replace(self, comments=[*self.comments, new_comment]), new_comment
 
-    def change_assignee(self, new_assignee:ProjectMember) -> Self:
+    def change_assignee(self, new_assignee: ProjectMember) -> Self:
+        """담당자 변경"""
         if self.assignee_id == new_assignee.user.id:
             return self
         return replace(self, assignee_id=new_assignee.user.id)
+
 
     def link_predecessor(self, requirement: Self) -> Self:
         """선행 요구사항 연결"""
         if requirement.id in self.dependencies:
             return self
-        return replace(self, dependencies=[self.dependencies, requirement.id])
+        return replace(self, dependencies=[*self.dependencies, requirement.id])
