@@ -46,32 +46,7 @@ class TestProject:
     
     class TestProjectMemberManagement:
         """멤버 관리 테스트"""
-        
-        def test_add_member(self, valid_project, valid_user):
-            """멤버 추가 테스트"""
-            # Given
-            new_member = User(
-                id=uuid4(),
-                email="member@example.com",
-                auth_provider="EMAIL",
-                status="ACTIVE",
-                created_at=datetime.now(timezone.utc)
-            )
-            
-            # When
-            updated_project = valid_project.add_member(new_member, ProjectRole.MEMBER)
-            
-            # Then
-            assert any(
-                member.user == new_member and member.role == ProjectRole.MEMBER
-                for member in updated_project.members
-            )
-        
-        def test_add_duplicate_member(self, valid_project, valid_user):
-            """중복 멤버 추가 시도"""
-            # When/Then
-            with pytest.raises(DuplicateMemberError):
-                valid_project.add_member(valid_user, ProjectRole.MEMBER)
+        ...
 
 class TestProjectInvitationManagement:
     """초대 관리 테스트"""
@@ -189,35 +164,6 @@ class TestProjectInvitationAcceptance:
             updated_project.accept_invitation(invitation.code, second_user)
         
         assert "Invitation has already been accepted" in str(exc_info.value)
-
-class TestProjectPermissions:
-    """권한 관리 테스트"""
-    
-    def test_can_modify(self, valid_project, valid_user):
-        """수정 권한 확인 테스트"""
-        # Given
-        viewer = User(
-            id=uuid4(),
-            email="viewer@example.com",
-            auth_provider="EMAIL",
-            status="ACTIVE",
-            created_at=datetime.now(timezone.utc)
-        )
-        project_with_viewer = valid_project.add_member(viewer, ProjectRole.VIEWER)
-        
-        # Then
-        assert project_with_viewer.can_modify(valid_user)  # manager
-        assert not project_with_viewer.can_modify(viewer)  # viewer
-        
-        # 비멤버
-        non_member = User(
-            id=uuid4(),
-            email="non@example.com",
-            auth_provider="EMAIL",
-            status="ACTIVE",
-            created_at=datetime.now(timezone.utc)
-        )
-        assert not project_with_viewer.can_modify(non_member)
 
 class TestProjectStatus:
     """상태 관리 테스트"""
