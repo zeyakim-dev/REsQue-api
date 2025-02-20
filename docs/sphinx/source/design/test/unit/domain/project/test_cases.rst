@@ -45,7 +45,10 @@ TestProject
     * 지정된 역할이 올바르게 설정됨
     * 중복 추가 시 예외 발생
 
-초대 관리 (test_invite_member)
+초대 관리 (TestProjectInvitation)
+"""""""""""""""""""""""""""""""
+
+초대 생성 (test_create_invitation)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 :시나리오:
     * 이메일로 멤버 초대
@@ -54,9 +57,9 @@ TestProject
 :검증 항목:
     * 초대 객체가 생성됨
     * 만료 시간이 7일 후로 설정
-    * 중복 초대 처리
+    * 중복 초대 시 DuplicateInvitationError 발생
 
-test_invite_acceptance
+초대 수락 (test_invite_acceptance)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 :시나리오:
     * 유효한 초대 코드로 수락 시도
@@ -67,7 +70,6 @@ test_invite_acceptance
     * 유효한 경우 멤버로 추가되고 초대 상태가 ACCEPTED로 변경됨
     * 만료된 경우 ExpiredInvitationError 발생
     * 중복 수락 시 AlreadyAcceptedInvitationError 발생
-
 
 권한 관리 테스트 (TestProjectPermissions)
 """"""""""""""""""""""""""""""""""
@@ -85,7 +87,7 @@ test_invite_acceptance
     * 비멤버는 접근 불가
 
 상태 관리 테스트 (TestProjectStatus)
-"""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""
 
 프로젝트 보관 (test_archive_project)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -96,7 +98,6 @@ test_invite_acceptance
 :검증 항목:
     * 상태가 ARCHIVED로 변경됨
     * 보관 후 수정 불가
-    * 읽기만 가능
 
 테스트 설계 원칙
 --------------
@@ -118,3 +119,4 @@ test_invite_acceptance
 * 모든 도메인 규칙 검증
 * 경계 조건 테스트
 * 예외 케이스 포함
+
