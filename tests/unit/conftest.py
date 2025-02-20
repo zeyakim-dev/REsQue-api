@@ -48,7 +48,8 @@ def valid_project_data(valid_user):
         "status": ProjectStatus.ACTIVE,
         "owner": valid_user,
         "created_at": datetime.now(timezone.utc),
-        "members": []
+        "members": [],
+        "invitations": {}
     }
 
 @pytest.fixture
