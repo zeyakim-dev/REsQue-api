@@ -3,13 +3,31 @@ from datetime import datetime, timedelta
 from typing import List, Self
 from uuid import UUID
 from resque_api.domain.project.value_objects import (
-    InvitationStatus, ProjectStatus, ProjectRole, ProjectMember, ProjectInvitation
+    InvitationStatus, ProjectStatus, ProjectRole
 )
 from resque_api.domain.project.exceptions import (
-    InvalidTitleError, DuplicateMemberError, InvalidProjectStateError, DuplicateInvitationError, InvalidRoleError, InvalidInvitationCodeError
+    InvalidTitleError, ExpiredInvitationError, InvalidProjectStateError, DuplicateInvitationError, InvalidRoleError, InvalidInvitationCodeError,
+    AlreadyAcceptedInvitationError
 )
 from resque_api.domain.user.entities import User
 import secrets
+
+
+@dataclass(frozen=True)
+class ProjectMember:
+    """프로젝트 멤버 값 객체"""
+    user: User  # type: ignore
+    role: ProjectRole
+
+@dataclass(frozen=True)
+class ProjectInvitation:
+    """프로젝트 초대 값 객체"""
+    email: str
+    role: ProjectRole
+    expires_at: datetime
+    code: str
+    status: InvitationStatus = InvitationStatus.PENDING
+
 
 @dataclass(frozen=True)
 class Project:
@@ -71,13 +89,20 @@ class Project:
         return replace(self, invitations=new_invitations), invitation
 
     def accept_invitation(self, code: str, user: User) -> tuple[Self, 'ProjectMember']:
-        invitation = self.invitations.get(code)
+        invitation: ProjectInvitation | None = self.invitations.get(code)
+        
         if not invitation:
             raise InvalidInvitationCodeError("Invalid invitation code")
         
-        if not invitation.email == user.email:
-            # TODO New ERROR
-            ...
+        if invitation.status == InvitationStatus.ACCEPTED:
+            raise AlreadyAcceptedInvitationError("Invitation has already accepted")
+
+        if datetime.now(tz=invitation.expires_at.tzinfo) > invitation.expires_at:
+            raise ExpiredInvitationError("Invitation has expired")
+
+        if invitation.email != user.email:
+            raise InvalidInvitationCodeError(f"Invitation was sent to {invitation.email}, not {user.email}")
+        
         new_member = ProjectMember(
             user=user,
             role=invitation.role
@@ -116,13 +141,5 @@ class Project:
         Returns:
             새로운 Project 인스턴스
         """
-        return Project(
-            id=self.id,
-            title=self.title,
-            description=self.description,
-            status=new_status,
-            owner=self.owner,
-            created_at=self.created_at,
-            members=self.members
-        ) 
+        return replace(self, status=new_status)
     
