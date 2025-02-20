@@ -1,6 +1,6 @@
 import pytest
 from resque_api.domain.requirement.entities import Requirement
-from resque_api.domain.requirement.value_objects import Requirement
+from resque_api.domain.requirement.value_objects import RequirementStatus
 from resque_api.domain.requirement.exceptions import (
     InvalidStatusTransitionError,
     RequirementPriorityError
