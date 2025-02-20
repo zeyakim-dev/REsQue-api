@@ -26,7 +26,6 @@ class Project:
     def __post_init__(self):
         """생성 시 유효성 검증"""
         self._validate_title()
-        self._ensure_owner_is_manager()
 
     def _validate_title(self) -> None:
         """제목 유효성 검증"""
@@ -35,43 +34,7 @@ class Project:
         if len(self.title) > 100:
             raise InvalidTitleError("Title is too long")
 
-    def _ensure_owner_is_manager(self) -> None:
-        """소유자를 manager 역할로 멤버에 추가"""
-        if not any(m.user == self.owner for m in self.members):
-            # frozen=True이므로 새 리스트 생성
-            object.__setattr__(
-                self, 
-                'members', 
-                [*self.members, ProjectMember(self.owner, ProjectRole.MANAGER)]
-            )
-
-    def add_member(self, user: User, role: ProjectRole) -> 'Project':
-        """멤버 추가
-        
-        Args:
-            user: 추가할 사용자
-            role: 부여할 역할
-            
-        Returns:
-            새로운 Project 인스턴스
-        """
-        if any(m.user == user for m in self.members):
-            raise DuplicateMemberError(f"User {user.email} is already a member")
-
-        if self.status == ProjectStatus.ARCHIVED:
-            raise InvalidProjectStateError("Cannot modify archived project")
-
-        return Project(
-            id=self.id,
-            title=self.title,
-            description=self.description,
-            status=self.status,
-            owner=self.owner,
-            created_at=self.created_at,
-            members=[*self.members, ProjectMember(user, role)]
-        )
-
-    def invite_member(self, email: str, role: ProjectRole) -> 'Project':
+    def invite_member(self, email: str, role: ProjectRole) -> tuple['Project', 'ProjectInvitation']:
         """멤버 초대
         
         Args:
@@ -99,9 +62,9 @@ class Project:
             raise DuplicateInvitationError("Invitation code collision detected")
             
         new_invitations = {**self.invitations, invitation.code: invitation}
-        return replace(self, invitations=new_invitations)
+        return replace(self, invitations=new_invitations), invitation
 
-    def accept_invitation(self, code: str, user: User) -> 'Project':
+    def accept_invitation(self, code: str, user: User) -> tuple['Project', 'ProjectMember']:
         invitation = self.invitations.get(code)
         if not invitation:
             raise InvalidInvitationCodeError("Invalid invitation code")
@@ -121,7 +84,7 @@ class Project:
             self,
             members=[*self.members, new_member],
             invitations=new_invitations
-        )
+        ), new_member
 
     def can_modify(self, user: User) -> bool:
         """수정 권한 확인
@@ -156,3 +119,4 @@ class Project:
             created_at=self.created_at,
             members=self.members
         ) 
+    
