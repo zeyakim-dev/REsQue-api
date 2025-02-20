@@ -102,7 +102,6 @@ def invalid_priority(request) -> int:
 def base_requirement(project_with_member: Project) -> Requirement:
     """기본 요구사항 템플릿"""
     return Requirement(
-        id=uuid4(),
         project_id=project_with_member.id,
         title="Sample Requirement",
         description="Initial Description",

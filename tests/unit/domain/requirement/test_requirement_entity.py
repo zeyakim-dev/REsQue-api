@@ -31,14 +31,14 @@ class TestRequirementCreation:
                 comments=[],
                 dependencies=[]
             )
-            
+
         assert "Title cannot be empty" in str(excinfo.value)
 
 class TestRequirementStatusTransitions:
     def test_valid_status_transition(self, requirement_by_status):
         """유효한 상태 변경 테스트"""
         current_status = requirement_by_status.status
-        
+
         if current_status == RequirementStatus.TODO:
             updated = requirement_by_status.change_status(RequirementStatus.IN_PROGRESS)
             assert updated.status == RequirementStatus.IN_PROGRESS
@@ -70,21 +70,37 @@ class TestRequirementTags:
         """태그 추가 및 제거 테스트"""
         updated = base_requirement.add_tag("urgent").add_tag("backend")
         assert set(updated.tags) == {"urgent", "backend"}
-        
+
         updated = updated.remove_tag("urgent")
         assert "urgent" not in updated.tags
 
 class TestRequirementComments:
     def test_add_comment(self, base_requirement, sample_user):
         """코멘트 추가 테스트"""
-        updated = base_requirement.add_comment(sample_user, "Test comment")
+        updated, comment = base_requirement.add_comment(sample_user, "Test comment")
         assert len(updated.comments) == 1
         assert updated.comments[0].content == "Test comment"
 
+class TestRequirementAssignee:
+    def test_change_assignee(self, base_requirement, new_assignee):
+        """담당자 변경 테스트"""
+        updated = base_requirement.change_assignee(new_assignee)
+        assert updated.assignee_id == new_assignee.user.id
+
+    def test_no_change_if_same_assignee(self, base_requirement):
+        """동일한 담당자로 변경 시 변경 없음"""
+        updated = base_requirement.change_assignee(base_requirement.assignee_id)
+        assert updated == base_requirement
+
 @pytest.mark.integration
 class TestRequirementDependencies:
-    def test_link_predecessors(self, base_requirement):
+    def test_link_predecessors(self, base_requirement, another_requirement):
         """선행 요구사항 연결 테스트"""
-        predecessor_id = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
-        updated = base_requirement.link_predecessor(predecessor_id)
-        assert predecessor_id in updated.dependencies 
+        updated = base_requirement.link_predecessor(another_requirement)
+        assert another_requirement.id in updated.dependencies
+
+    def test_no_duplicate_predecessors(self, base_requirement, another_requirement):
+        """중복된 선행 요구사항 연결 방지 테스트"""
+        updated = base_requirement.link_predecessor(another_requirement)
+        updated_again = updated.link_predecessor(another_requirement)
+        assert updated_again == updated
