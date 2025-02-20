@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
+from resque_api.domain.user.entities import User
+
 class ProjectStatus(Enum):
     """프로젝트 상태"""
     ACTIVE = "ACTIVE"
@@ -23,7 +25,7 @@ class InvitationStatus(Enum):
 @dataclass(frozen=True)
 class ProjectMember:
     """프로젝트 멤버 값 객체"""
-    user: 'User'  # type: ignore
+    user: User  # type: ignore
     role: ProjectRole
 
 @dataclass(frozen=True)
