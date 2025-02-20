@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Self
 from uuid import UUID
 from resque_api.domain.project.value_objects import (
     InvitationStatus, ProjectStatus, ProjectRole, ProjectMember, ProjectInvitation
@@ -27,6 +27,12 @@ class Project:
         """생성 시 유효성 검증"""
         self._validate_title()
 
+        if not any(m.user == self.owner for m in self.members):
+            new_member = ProjectMember(user=self.owner, role=ProjectRole.MANAGER)
+            members = [new_member, *self.members]
+            
+            super().__setattr__('members', members)
+
     def _validate_title(self) -> None:
         """제목 유효성 검증"""
         if not self.title:
@@ -34,7 +40,7 @@ class Project:
         if len(self.title) > 100:
             raise InvalidTitleError("Title is too long")
 
-    def invite_member(self, email: str, role: ProjectRole) -> tuple['Project', 'ProjectInvitation']:
+    def invite_member(self, email: str, role: ProjectRole) -> tuple[Self, 'ProjectInvitation']:
         """멤버 초대
         
         Args:
@@ -64,7 +70,7 @@ class Project:
         new_invitations = {**self.invitations, invitation.code: invitation}
         return replace(self, invitations=new_invitations), invitation
 
-    def accept_invitation(self, code: str, user: User) -> tuple['Project', 'ProjectMember']:
+    def accept_invitation(self, code: str, user: User) -> tuple[Self, 'ProjectMember']:
         invitation = self.invitations.get(code)
         if not invitation:
             raise InvalidInvitationCodeError("Invalid invitation code")
@@ -101,7 +107,7 @@ class Project:
 
         return member.role in [ProjectRole.MANAGER, ProjectRole.MEMBER]
 
-    def update_status(self, new_status: ProjectStatus) -> 'Project':
+    def update_status(self, new_status: ProjectStatus) -> Self:
         """상태 변경
         
         Args:
