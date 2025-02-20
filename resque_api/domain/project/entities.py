@@ -94,6 +94,9 @@ class Project:
         if not invitation:
             raise InvalidInvitationCodeError("Invalid invitation code")
         
+        if any(m.user == user for m in self.members):
+            raise AlreadyAcceptedInvitationError("User is already a project member")
+
         if invitation.status == InvitationStatus.ACCEPTED:
             raise AlreadyAcceptedInvitationError("Invitation has already accepted")
 
