@@ -1,6 +1,6 @@
-from src.domain.user.value_objects import Password
-from src.domain.user.entities import User
-from src.application.ports.security import PasswordHasher
+from resque_api.domain.user.value_objects import Password
+from resque_api.domain.user.entities import User
+from resque_api.application.ports.security import PasswordHasher
 
 def authenticate_user(user: User, plain_password: str, password_hasher: PasswordHasher) -> bool:
     """사용자 인증

@@ -1,7 +1,7 @@
 import pytest
-from src.application.auth.authenticate import authenticate_user
-from src.domain.user.entities import User
-from src.domain.user.value_objects import Password
+from resque_api.application.auth.authenticate import authenticate_user
+from resque_api.domain.user.entities import User
+from resque_api.domain.user.value_objects import Password
 
 class TestAuthenticate:
     def test_authenticate_user_success(self, valid_user_data, hasher):
