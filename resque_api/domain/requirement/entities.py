@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field, replace
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 from typing import List, Optional, Self
 
 from resque_api.domain.project.entities import ProjectMember
 from resque_api.domain.requirement.value_objects import RequirementStatus, RequirementPriority
-from resque_api.domain.requirement.exceptions import RequirementPriorityError
+from resque_api.domain.requirement.exceptions import RequirementPriorityError, DependencyCycleError
 
 
 @dataclass(frozen=True)
@@ -24,18 +24,20 @@ class RequirementComment:
 @dataclass(frozen=True)
 class Requirement:
     """요구사항 도메인 엔티티"""
-    id: UUID
+    
     project_id: UUID
     title: str
     description: str
-    status: RequirementStatus
     assignee_id: Optional[UUID]
     created_at: datetime
     updated_at: datetime
     priority: RequirementPriority
+
+    id: UUID = field(default_factory=uuid4)
+    status: RequirementStatus = field(default=RequirementStatus.TODO)
     tags: List[str] = field(default_factory=list)
     comments: List[RequirementComment] = field(default_factory=list)
-    dependencies: List[UUID] = field(default_factory=list)
+    dependencies: List[Self] = field(default_factory=list)
 
     def change_status(self, new_status: RequirementStatus) -> Self:
         """요구사항 상태 변경"""
@@ -82,6 +84,27 @@ class Requirement:
 
     def link_predecessor(self, requirement: Self) -> Self:
         """선행 요구사항 연결"""
-        if requirement.id in self.dependencies:
+        if requirement in self.dependencies:
             return self
-        return replace(self, dependencies=[*self.dependencies, requirement.id])
+        
+        if self.has_cycle(requirement):
+            raise DependencyCycleError("Cyclic dependency detected.")
+        
+        return replace(self, dependencies=[*self.dependencies, requirement])
+
+    def has_cycle(self, new_requirement: Self) -> bool:
+        """새 요구사항을 추가했을 때 순환 참조 발생 여부 확인 (DFS)"""
+        def dfs(requirement: Self, visited: set[UUID]) -> bool:
+            if requirement.id in visited:
+                return True
+            visited.add(requirement.id)
+
+            for dep in requirement.dependencies:
+                if dfs(dep, visited):
+                    return True
+
+            visited.remove(requirement.id)
+            return False
+        
+        return dfs(new_requirement, {self.id})
+
