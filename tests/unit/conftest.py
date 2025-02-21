@@ -2,10 +2,11 @@ import pytest
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 from typing import Generator, Any
+from resque_api.domain.requirement.value_objects import RequirementStatus
 from resque_api.domain.user.value_objects import AuthProvider, UserStatus, Password
 from resque_api.infrastructure.security.password_hasher import BcryptPasswordHasher
 from resque_api.domain.project.entities import Project, ProjectMember
-from resque_api.domain.project.value_objects import ProjectStatus
+from resque_api.domain.project.value_objects import ProjectRole, ProjectStatus
 from resque_api.domain.user.entities import User
 from resque_api.domain.requirement.entities import Requirement, RequirementComment
 
@@ -99,14 +100,20 @@ def invalid_priority(request) -> int:
     return request.param
 
 @pytest.fixture
-def base_requirement(project_with_member: Project) -> Requirement:
+def assignee(valid_user: User) -> ProjectMember:
+    return ProjectMember(
+        user=valid_user,
+        role=ProjectRole.MANAGER
+    )
+
+@pytest.fixture
+def base_requirement(project_with_member: Project, assignee: ProjectMember) -> Requirement:
     """기본 요구사항 템플릿"""
     return Requirement(
         project_id=project_with_member.id,
         title="Sample Requirement",
         description="Initial Description",
-        status="TODO",
-        assignee_id=None,
+        assignee=assignee,
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
         priority=2,
@@ -130,10 +137,39 @@ def requirement_with_comments(base_requirement: Requirement, sample_user: User) 
     """코멘트가 포함된 요구사항"""
     return base_requirement.add_comment(sample_user, "First comment").add_comment(sample_user, "Second comment")
 
-@pytest.fixture(params=["TODO", "IN_PROGRESS", "DONE"])
+@pytest.fixture(params=[RequirementStatus.TODO, RequirementStatus.IN_PROGRESS, RequirementStatus.DONE])
 def requirement_by_status(request: Any, base_requirement: Requirement) -> Requirement:
     """다양한 상태의 요구사항 생성"""
-    return base_requirement.change_status(request.param)
+    return Requirement(
+        project_id=base_requirement.project_id,
+        title=base_requirement.title,
+        description=base_requirement.description,
+        assignee=assignee,
+        status=request.param,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+        priority=2,
+        tags=base_requirement.tags,
+        comments=base_requirement.comments,
+        dependencies=base_requirement.dependencies,
+    )
+
+@pytest.fixture
+def new_assignee():
+    """새로운 담당자(ProjectMember) 생성 픽스처"""
+    user = User(
+        id=uuid4(),
+        email="new_assignee@example.com",
+        auth_provider="EMAIL",
+        status="ACTIVE",
+        created_at=datetime.now(timezone.utc)
+    )
+
+    return ProjectMember(
+        user=user,
+        role="developer",
+    )
+
 
 @pytest.fixture
 def sample_comment(sample_user: User) -> RequirementComment:

@@ -1,29 +1,34 @@
+from datetime import datetime
+from uuid import uuid4
 import pytest
 from resque_api.domain.requirement.entities import Requirement
-from resque_api.domain.requirement.value_objects import RequirementStatus
+from resque_api.domain.requirement.value_objects import RequirementPriority, RequirementStatus
 from resque_api.domain.requirement.exceptions import (
     InvalidStatusTransitionError,
-    RequirementPriorityError
+    RequirementPriorityError,
+    RequirementTitleLengthError,
+    DependencyCycleError
 )
+from resque_api.domain.project.entities import ProjectMember
 
 class TestRequirementCreation:
     def test_create_valid_requirement(self, base_requirement):
         """요구사항 생성 검증 테스트"""
-        requirement = base_requirement
+        requirement: Requirement = base_requirement
         assert requirement.title == "Sample Requirement"
         assert requirement.status == RequirementStatus.TODO
         assert requirement.priority == 2
 
     def test_create_with_invalid_title(self, project_with_member):
         """유효하지 않은 제목으로 생성 시 예외 발생"""
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(RequirementTitleLengthError) as excinfo:
             Requirement(
                 id=project_with_member.id,
                 project_id=project_with_member.id,
                 title="",  # Invalid empty title
                 description="Test",
                 status=RequirementStatus.TODO,
-                assignee_id=None,
+                assignee=None,
                 created_at=project_with_member.created_at,
                 updated_at=project_with_member.created_at,
                 priority=1,
@@ -31,8 +36,6 @@ class TestRequirementCreation:
                 comments=[],
                 dependencies=[]
             )
-
-        assert "Title cannot be empty" in str(excinfo.value)
 
 class TestRequirementStatusTransitions:
     def test_valid_status_transition(self, requirement_by_status):
@@ -82,25 +85,124 @@ class TestRequirementComments:
         assert updated.comments[0].content == "Test comment"
 
 class TestRequirementAssignee:
-    def test_change_assignee(self, base_requirement, new_assignee):
+    def test_change_assignee(self, base_requirement, new_assignee: ProjectMember):
         """담당자 변경 테스트"""
         updated = base_requirement.change_assignee(new_assignee)
-        assert updated.assignee_id == new_assignee.user.id
+        assert updated.assignee == new_assignee
 
-    def test_no_change_if_same_assignee(self, base_requirement):
+    def test_no_change_if_same_assignee(self, base_requirement: Requirement):
         """동일한 담당자로 변경 시 변경 없음"""
-        updated = base_requirement.change_assignee(base_requirement.assignee_id)
+        assignee = base_requirement.assignee
+        updated = base_requirement.change_assignee(assignee)
         assert updated == base_requirement
 
-@pytest.mark.integration
 class TestRequirementDependencies:
-    def test_link_predecessors(self, base_requirement, another_requirement):
-        """선행 요구사항 연결 테스트"""
-        updated = base_requirement.link_predecessor(another_requirement)
-        assert another_requirement.id in updated.dependencies
+    def test_link_valid_predecessor(self, base_requirement):
+        """유효한 선행 요구사항 연결"""
+        another_requirement = Requirement(
+            project_id=uuid4(),
+            title="Another Requirement",
+            description="Another description",
+            assignee=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            priority=RequirementPriority(1)
+        )
 
-    def test_no_duplicate_predecessors(self, base_requirement, another_requirement):
-        """중복된 선행 요구사항 연결 방지 테스트"""
+        updated = base_requirement.link_predecessor(another_requirement)
+
+        assert another_requirement.id in [dep.id for dep in updated.dependencies]
+        assert len(updated.dependencies) == 1
+
+    def test_prevent_duplicate_predecessor(self, base_requirement):
+        """중복 선행 요구사항 연결 방지"""
+        another_requirement = Requirement(
+            project_id=uuid4(),
+            title="Another Requirement",
+            description="Another description",
+            assignee=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            priority=RequirementPriority(3)
+        )
+
         updated = base_requirement.link_predecessor(another_requirement)
         updated_again = updated.link_predecessor(another_requirement)
-        assert updated_again == updated
+
+        assert len(updated_again.dependencies) == 1
+
+    def test_detect_immediate_cycle(self, base_requirement):
+        """직접 순환 참조 감지"""
+        with pytest.raises(DependencyCycleError):
+            base_requirement.link_predecessor(base_requirement)
+
+    def test_detect_indirect_cycle(self, base_requirement):
+        """간접 순환 참조 감지"""
+        req_b = Requirement(
+            project_id=uuid4(),
+            title="Requirement B",
+            description="Description B",
+            assignee=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            priority=RequirementPriority(2)
+        )
+
+        req_c = Requirement(
+            project_id=uuid4(),
+            title="Requirement C",
+            description="Description C",
+            assignee=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            priority=RequirementPriority(1)
+        )
+
+        req_b = base_requirement.link_predecessor(req_b)
+        req_c = req_b.link_predecessor(req_c)
+
+        with pytest.raises(DependencyCycleError) as excinfo:
+            req_c.link_predecessor(base_requirement)
+
+        assert "Cyclic dependency" in str(excinfo.value)
+
+    def test_valid_dependency_chain(self, base_requirement):
+        """유효한 다단계 의존성 체인"""
+        req1 = Requirement(
+            project_id=uuid4(),
+            title="Requirement 1",
+            description="Description 1",
+            assignee=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            priority=RequirementPriority(3)
+        )
+
+        req2 = req1.link_predecessor(
+            Requirement(
+                project_id=uuid4(),
+                title="Requirement 2",
+                description="Description 2",
+                assignee=None,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+                priority=RequirementPriority(2)
+            )
+        )
+
+        req3 = req2.link_predecessor(
+            Requirement(
+                project_id=uuid4(),
+                title="Requirement 3",
+                description="Description 3",
+                assignee=None,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+                priority=RequirementPriority(1)
+            )
+        )
+
+        updated = base_requirement.link_predecessor(req3)
+
+        assert len(updated.dependencies) == 1
+        assert req3.id in [dep.id for dep in updated.dependencies]
