@@ -1,16 +1,28 @@
 from dataclasses import dataclass, field, replace
 from datetime import datetime
-from uuid import UUID, uuid4
 from typing import Dict, List, Optional, Self
+from uuid import UUID, uuid4
 
 from resque_api.domain.project.entities import ProjectMember
-from resque_api.domain.requirement.value_objects import RequirementStatus, RequirementPriority
-from resque_api.domain.requirement.exceptions import CommentEditPermissionError, CommentNotFoundError, RequirementDependencyNotFoundError, RequirementPriorityError, DependencyCycleError, RequirementTitleLengthError, TagNotFoundError 
+from resque_api.domain.requirement.exceptions import (
+    CommentEditPermissionError,
+    CommentNotFoundError,
+    DependencyCycleError,
+    RequirementDependencyNotFoundError,
+    RequirementPriorityError,
+    RequirementTitleLengthError,
+    TagNotFoundError,
+)
+from resque_api.domain.requirement.value_objects import (
+    RequirementPriority,
+    RequirementStatus,
+)
 
 
 @dataclass(frozen=True)
 class RequirementComment:
     """요구사항 코멘트 엔티티"""
+
     requirement_id: UUID
     author_id: UUID
     content: str
@@ -26,7 +38,7 @@ class RequirementComment:
 @dataclass(frozen=True)
 class Requirement:
     """요구사항 도메인 엔티티"""
-    
+
     project_id: UUID
     title: str
     description: str
@@ -65,7 +77,7 @@ class Requirement:
     def add_tag(self, tag: str) -> Self:
         """태그 추가"""
         normalized_tag = tag.strip().lower()
-        
+
         if normalized_tag in self.tags:
             return self
 
@@ -75,10 +87,12 @@ class Requirement:
         """태그 제거"""
         normalized_tag = tag.strip().lower()
         if normalized_tag not in self.tags:
-            raise TagNotFoundError (f"Tag '{normalized_tag}' does not exist.")
+            raise TagNotFoundError(f"Tag '{normalized_tag}' does not exist.")
         return replace(self, tags=[t for t in self.tags if t != normalized_tag])
 
-    def add_comment(self, author: ProjectMember, comment: str) -> tuple[Self, RequirementComment]:
+    def add_comment(
+        self, author: ProjectMember, comment: str
+    ) -> tuple[Self, RequirementComment]:
         """댓글 추가"""
         new_comment = RequirementComment(
             requirement_id=self.id,
@@ -86,9 +100,14 @@ class Requirement:
             content=comment,
             created_at=datetime.utcnow(),
         )
-        return replace(self, comments={**self.comments, new_comment.id: new_comment}), new_comment
+        return (
+            replace(self, comments={**self.comments, new_comment.id: new_comment}),
+            new_comment,
+        )
 
-    def edit_comment(self, author: ProjectMember, comment_id: UUID, new_content: str) -> tuple[Self, RequirementComment]:
+    def edit_comment(
+        self, author: ProjectMember, comment_id: UUID, new_content: str
+    ) -> tuple[Self, RequirementComment]:
         """댓글 수정"""
         comment = self.comments.get(comment_id)
         if not comment:
@@ -97,8 +116,11 @@ class Requirement:
             raise CommentEditPermissionError("댓글을 수정할 권한이 없습니다.")
 
         edited_comment = comment.edit_content(new_content)
-        return replace(self, comments={**self.comments, comment_id: edited_comment}), edited_comment
-    
+        return (
+            replace(self, comments={**self.comments, comment_id: edited_comment}),
+            edited_comment,
+        )
+
     def change_assignee(self, new_assignee: ProjectMember | None) -> Self:
         """담당자 변경"""
         if self.assignee == new_assignee:
@@ -113,14 +135,17 @@ class Requirement:
         if self.has_cycle(requirement):
             raise DependencyCycleError("Cyclic dependency detected.")
 
-        return replace(self, dependencies={**self.dependencies, requirement.id: requirement})
+        return replace(
+            self, dependencies={**self.dependencies, requirement.id: requirement}
+        )
 
     def has_cycle(self, new_requirement: Self) -> bool:
         """새 요구사항을 추가했을 때 순환 참조 발생 여부 확인 (DFS)"""
+
         def dfs(requirement: Self, path: set[UUID]) -> bool:
             if requirement.id in path:
                 return True
-            
+
             path.add(requirement.id)
             result = any(dfs(dep, path) for dep in requirement.dependencies.values())
             path.remove(requirement.id)
@@ -131,6 +156,13 @@ class Requirement:
     def unlink_predecessor(self, requirement: Self) -> Self:
         """선행 요구사항 제거"""
         if requirement.id not in self.dependencies:
-            raise RequirementDependencyNotFoundError("해당 선행 요구사항이 존재하지 않습니다.")
+            raise RequirementDependencyNotFoundError(
+                "해당 선행 요구사항이 존재하지 않습니다."
+            )
 
-        return replace(self, dependencies={k: v for k, v in self.dependencies.items() if k != requirement.id})
+        return replace(
+            self,
+            dependencies={
+                k: v for k, v in self.dependencies.items() if k != requirement.id
+            },
+        )

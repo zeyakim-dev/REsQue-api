@@ -1,19 +1,22 @@
+import re
 from dataclasses import dataclass, replace
 from datetime import datetime
 from uuid import UUID
-from resque_api.domain.user.value_objects import AuthProvider, UserStatus, Password
-from resque_api.domain.user.exceptions import InvalidEmailError, InactiveUserError
-import re
+
+from resque_api.domain.user.exceptions import InactiveUserError, InvalidEmailError
+from resque_api.domain.user.value_objects import AuthProvider, Password, UserStatus
+
 
 @dataclass(frozen=True)
 class User:
     """사용자 엔티티
-    
+
     도메인 규칙:
     - 이메일은 유일한 식별자로 사용됨
     - OAuth 사용자는 별도의 인증 로직 사용
     - 비활성 상태의 사용자는 어떤 작업도 수행할 수 없음
     """
+
     id: UUID
     email: str
     auth_provider: AuthProvider
@@ -27,7 +30,7 @@ class User:
 
     def _validate_email(self) -> None:
         """이메일 형식 검증"""
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if not re.match(email_pattern, self.email):
             raise InvalidEmailError("Invalid email format")
 
@@ -35,15 +38,15 @@ class User:
         """인증 가능 여부 확인"""
         if self.status == UserStatus.INACTIVE:
             raise InactiveUserError("Inactive user cannot perform actions")
-        
+
         if self.auth_provider != AuthProvider.EMAIL:
             return False
-            
+
         return self.password is not None
 
-    def update_status(self, new_status: UserStatus) -> 'User':
+    def update_status(self, new_status: UserStatus) -> "User":
         """사용자 상태 변경
-        
+
         비활성 상태의 사용자는 상태 변경 불가
         새로운 User 인스턴스를 반환
         """
