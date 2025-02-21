@@ -105,6 +105,14 @@ class TestRequirementAssignee:
         updated = base_requirement.change_assignee(assignee)
         assert updated == base_requirement
 
+    def test_unassign_assignee(self, base_requirement, new_assignee):
+        """담당자 해제 테스트"""
+        updated = base_requirement.change_assignee(new_assignee)
+        updated = updated.change_assignee(None)
+
+        assert updated.assignee is None
+
+
 class TestRequirementDependencies:
     def test_link_valid_predecessor(self, base_requirement):
         """유효한 선행 요구사항 연결"""
@@ -215,3 +223,21 @@ class TestRequirementDependencies:
 
         assert len(updated.dependencies) == 1
         assert req3.id in updated.dependencies
+
+    def test_unlink_valid_predecessor(self, base_requirement):
+        """유효한 선행 요구사항 제거"""
+        another_requirement = Requirement(
+            project_id=uuid4(),
+            title="Another Requirement",
+            description="Another description",
+            assignee=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            priority=RequirementPriority(1)
+        )
+
+        updated = base_requirement.link_predecessor(another_requirement)
+        updated = updated.unlink_predecessor(another_requirement)
+
+        assert another_requirement.id not in updated.dependencies
+        assert len(updated.dependencies) == 0
