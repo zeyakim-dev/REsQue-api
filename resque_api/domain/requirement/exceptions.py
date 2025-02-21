@@ -15,3 +15,12 @@ class TagLimitExceededError(RequirementError):
 
 class RequirementTitleLengthError(RequirementError):
     """요구사항 제목 길이 예외"""
+
+class CommentNotFoundError(Exception):
+    """수정하려는 댓글을 찾을 수 없음"""
+    
+class CommentEditPermissionError(Exception):
+    """댓글 수정 권한이 없음"""
+
+class RequirementDependencyNotFoundError(Exception):
+    """요구사항의 선행 요구사항이 존재하지 않음"""
