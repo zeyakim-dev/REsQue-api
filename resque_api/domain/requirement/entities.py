@@ -3,9 +3,9 @@ from datetime import datetime
 from uuid import UUID, uuid4
 from typing import Dict, List, Optional, Self
 
-from resque_api.domain.project.entities import Project, ProjectMember
+from resque_api.domain.project.entities import ProjectMember
 from resque_api.domain.requirement.value_objects import RequirementStatus, RequirementPriority
-from resque_api.domain.requirement.exceptions import RequirementPriorityError, DependencyCycleError, RequirementTitleLengthError
+from resque_api.domain.requirement.exceptions import CommentEditPermissionError, CommentNotFoundError, RequirementPriorityError, DependencyCycleError, RequirementTitleLengthError
 
 
 @dataclass(frozen=True)
@@ -15,6 +15,7 @@ class RequirementComment:
     author_id: UUID
     content: str
     created_at: datetime
+
     id: UUID = field(default_factory=uuid4)
 
     def edit_content(self, new_content: str) -> Self:
@@ -38,7 +39,7 @@ class Requirement:
     status: RequirementStatus = field(default=RequirementStatus.TODO)
     tags: List[str] = field(default_factory=list)
     comments: Dict[UUID, RequirementComment] = field(default_factory=dict)
-    dependencies: List[Self] = field(default_factory=list)
+    dependencies: Dict[UUID, Self] = field(default_factory=dict)
 
     def __post_init__(self):
         """초기화 시 유효성 검증"""
@@ -85,17 +86,20 @@ class Requirement:
             content=comment,
             created_at=datetime.utcnow(),
         )
-        return replace(self, comments={*self.comments, {new_comment.id: new_comment}}), new_comment
+        return replace(self, comments={**self.comments, new_comment.id: new_comment}), new_comment
 
     def edit_comment(self, author: ProjectMember, comment_id: UUID, new_content: str) -> tuple[Self, RequirementComment]:
         """댓글 수정"""
         comment = self.comments.get(comment_id)
         if not comment:
-            raise Exception
+            raise CommentNotFoundError("수정하려는 댓글을 찾을 수 없습니다.")
+        if comment.author_id != author.id:
+            raise CommentEditPermissionError("댓글을 수정할 권한이 없습니다.")
+
         edited_comment = comment.edit_content(new_content)
-        return replace(self, comments={*self.comments, {comment_id: edited_comment}}), edited_comment
+        return replace(self, comments={**self.comments, comment_id: edited_comment}), edited_comment
     
-    def change_assignee(self, new_assignee: ProjectMember) -> Self:
+    def change_assignee(self, new_assignee: ProjectMember | None) -> Self:
         """담당자 변경"""
         if self.assignee == new_assignee:
             return self
@@ -121,3 +125,9 @@ class Requirement:
             return any(dfs(dep, path) for dep in requirement.dependencies)
         
         return dfs(new_requirement, {self.id})
+
+    def unlink_predecessor(self, requirement: Self) -> Self:
+        if requirement.id in {r.id for r in self.dependencies}:
+            raise Exception
+
+        return replace(self, dependencies=[*self.dependencies, requirement])
