@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 from uuid import UUID, uuid4
-from typing import List, Optional, Self
+from typing import Dict, List, Optional, Self
 
-from resque_api.domain.project.entities import ProjectMember
+from resque_api.domain.project.entities import Project, ProjectMember
 from resque_api.domain.requirement.value_objects import RequirementStatus, RequirementPriority
-from resque_api.domain.requirement.exceptions import RequirementPriorityError, DependencyCycleError
+from resque_api.domain.requirement.exceptions import RequirementPriorityError, DependencyCycleError, RequirementTitleLengthError
 
 
 @dataclass(frozen=True)
@@ -15,6 +15,7 @@ class RequirementComment:
     author_id: UUID
     content: str
     created_at: datetime
+    id: UUID = field(default_factory=uuid4)
 
     def edit_content(self, new_content: str) -> Self:
         """코멘트 내용 수정"""
@@ -28,7 +29,7 @@ class Requirement:
     project_id: UUID
     title: str
     description: str
-    assignee_id: Optional[UUID]
+    assignee: ProjectMember | None
     created_at: datetime
     updated_at: datetime
     priority: RequirementPriority
@@ -36,8 +37,19 @@ class Requirement:
     id: UUID = field(default_factory=uuid4)
     status: RequirementStatus = field(default=RequirementStatus.TODO)
     tags: List[str] = field(default_factory=list)
-    comments: List[RequirementComment] = field(default_factory=list)
+    comments: Dict[UUID, RequirementComment] = field(default_factory=dict)
     dependencies: List[Self] = field(default_factory=list)
+
+    def __post_init__(self):
+        """초기화 시 유효성 검증"""
+        self._validate_title()
+
+    def _validate_title(self):
+        """제목 유효성 검사"""
+        if len(self.title) > 100:
+            raise RequirementTitleLengthError("제목은 100자 이내로 작성해야 합니다.")
+        if len(self.title) < 2:
+            raise RequirementTitleLengthError("제목은 2자 이상이어야 합니다.")
 
     def change_status(self, new_status: RequirementStatus) -> Self:
         """요구사항 상태 변경"""
@@ -73,38 +85,39 @@ class Requirement:
             content=comment,
             created_at=datetime.utcnow(),
         )
-        return replace(self, comments=[*self.comments, new_comment]), new_comment
+        return replace(self, comments={*self.comments, {new_comment.id: new_comment}}), new_comment
 
+    def edit_comment(self, author: ProjectMember, comment_id: UUID, new_content: str) -> tuple[Self, RequirementComment]:
+        """댓글 수정"""
+        comment = self.comments.get(comment_id)
+        if not comment:
+            raise Exception
+        edited_comment = comment.edit_content(new_content)
+        return replace(self, comments={*self.comments, {comment_id: edited_comment}}), edited_comment
+    
     def change_assignee(self, new_assignee: ProjectMember) -> Self:
         """담당자 변경"""
-        if self.assignee_id == new_assignee.user.id:
+        if self.assignee == new_assignee:
             return self
-        return replace(self, assignee_id=new_assignee.user.id)
-
+        return replace(self, assignee=new_assignee)
 
     def link_predecessor(self, requirement: Self) -> Self:
         """선행 요구사항 연결"""
-        if requirement in self.dependencies:
+        if requirement.id in {r.id for r in self.dependencies}:
             return self
-        
+
         if self.has_cycle(requirement):
             raise DependencyCycleError("Cyclic dependency detected.")
-        
+
         return replace(self, dependencies=[*self.dependencies, requirement])
 
     def has_cycle(self, new_requirement: Self) -> bool:
         """새 요구사항을 추가했을 때 순환 참조 발생 여부 확인 (DFS)"""
-        def dfs(requirement: Self, visited: set[UUID]) -> bool:
-            if requirement.id in visited:
+        def dfs(requirement: Self, path: set[UUID]) -> bool:
+            if requirement.id in path:
                 return True
-            visited.add(requirement.id)
+            path.add(requirement.id)
 
-            for dep in requirement.dependencies:
-                if dfs(dep, visited):
-                    return True
-
-            visited.remove(requirement.id)
-            return False
+            return any(dfs(dep, path) for dep in requirement.dependencies)
         
         return dfs(new_requirement, {self.id})
-

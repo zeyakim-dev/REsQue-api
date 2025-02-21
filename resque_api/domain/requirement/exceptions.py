@@ -12,3 +12,6 @@ class DependencyCycleError(RequirementError):
 
 class TagLimitExceededError(RequirementError):
     """태그 개수 초과 예외"""
+
+class RequirementTitleLengthError(RequirementError):
+    """요구사항 제목 길이 예외"""
