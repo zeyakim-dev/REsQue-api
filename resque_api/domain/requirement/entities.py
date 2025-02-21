@@ -60,7 +60,7 @@ class Requirement:
         """우선순위 설정"""
         if not 1 <= priority <= 3:
             raise RequirementPriorityError("Priority must be between 1 and 3")
-        return replace(self, priority=priority)
+        return replace(self, priority=RequirementPriority(priority))
 
     def add_tag(self, tag: str) -> Self:
         """태그 추가"""
@@ -120,10 +120,12 @@ class Requirement:
         def dfs(requirement: Self, path: set[UUID]) -> bool:
             if requirement.id in path:
                 return True
+            
             path.add(requirement.id)
+            result = any(dfs(dep, path) for dep in requirement.dependencies.values())
+            path.remove(requirement.id)
+            return result
 
-            return any(dfs(dep, path) for dep in requirement.dependencies.values())
-        
         return dfs(new_requirement, {self.id})
 
     def unlink_predecessor(self, requirement: Self) -> Self:
