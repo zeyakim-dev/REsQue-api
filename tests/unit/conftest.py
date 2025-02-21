@@ -117,9 +117,6 @@ def base_requirement(project_with_member: Project, assignee: ProjectMember) -> R
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
         priority=2,
-        tags=[],
-        comments=[],
-        dependencies=[]
     )
 
 @pytest.fixture

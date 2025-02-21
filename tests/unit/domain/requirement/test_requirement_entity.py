@@ -82,7 +82,16 @@ class TestRequirementComments:
         """코멘트 추가 테스트"""
         updated, comment = base_requirement.add_comment(sample_user, "Test comment")
         assert len(updated.comments) == 1
-        assert updated.comments[0].content == "Test comment"
+        assert updated.comments[comment.id].content == "Test comment"
+    
+    def test_edit_comment_content(self, base_requirement, sample_user):
+        """코멘트 내용 수정 테스트"""
+        updated, comment = base_requirement.add_comment(sample_user, "Initial content")
+        edited_comment = comment.edit_content("Updated content")
+        assert edited_comment.content == "Updated content"
+        assert edited_comment.requirement_id == comment.requirement_id
+        assert edited_comment.author_id == comment.author_id
+        assert edited_comment.created_at == comment.created_at
 
 class TestRequirementAssignee:
     def test_change_assignee(self, base_requirement, new_assignee: ProjectMember):
