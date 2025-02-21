@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Self
 
 from resque_api.domain.project.entities import ProjectMember
 from resque_api.domain.requirement.value_objects import RequirementStatus, RequirementPriority
-from resque_api.domain.requirement.exceptions import CommentEditPermissionError, CommentNotFoundError, RequirementPriorityError, DependencyCycleError, RequirementTitleLengthError
+from resque_api.domain.requirement.exceptions import CommentEditPermissionError, CommentNotFoundError, RequirementDependencyNotFoundError, RequirementPriorityError, DependencyCycleError, RequirementTitleLengthError
 
 
 @dataclass(frozen=True)
@@ -127,7 +127,8 @@ class Requirement:
         return dfs(new_requirement, {self.id})
 
     def unlink_predecessor(self, requirement: Self) -> Self:
-        if requirement.id in {r.id for r in self.dependencies}:
-            raise Exception
+        """선행 요구사항 제거"""
+        if requirement.id not in {r.id for r in self.dependencies}:
+            raise RequirementDependencyNotFoundError("해당 선행 요구사항이 존재하지 않습니다.")
 
-        return replace(self, dependencies=[*self.dependencies, requirement])
+        return replace(self, dependencies=[r for r in self.dependencies if r.id != requirement.id])
