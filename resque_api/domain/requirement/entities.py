@@ -107,13 +107,13 @@ class Requirement:
 
     def link_predecessor(self, requirement: Self) -> Self:
         """선행 요구사항 연결"""
-        if requirement.id in {r.id for r in self.dependencies}:
+        if requirement.id in self.dependencies:
             return self
 
         if self.has_cycle(requirement):
             raise DependencyCycleError("Cyclic dependency detected.")
 
-        return replace(self, dependencies=[*self.dependencies, requirement])
+        return replace(self, dependencies={**self.dependencies, requirement.id: requirement})
 
     def has_cycle(self, new_requirement: Self) -> bool:
         """새 요구사항을 추가했을 때 순환 참조 발생 여부 확인 (DFS)"""
@@ -122,13 +122,13 @@ class Requirement:
                 return True
             path.add(requirement.id)
 
-            return any(dfs(dep, path) for dep in requirement.dependencies)
+            return any(dfs(dep, path) for dep in requirement.dependencies.values())
         
         return dfs(new_requirement, {self.id})
 
     def unlink_predecessor(self, requirement: Self) -> Self:
         """선행 요구사항 제거"""
-        if requirement.id not in {r.id for r in self.dependencies}:
+        if requirement.id not in self.dependencies:
             raise RequirementDependencyNotFoundError("해당 선행 요구사항이 존재하지 않습니다.")
 
-        return replace(self, dependencies=[r for r in self.dependencies if r.id != requirement.id])
+        return replace(self, dependencies={k: v for k, v in self.dependencies.items() if k != requirement.id})

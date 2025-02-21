@@ -120,7 +120,7 @@ class TestRequirementDependencies:
 
         updated = base_requirement.link_predecessor(another_requirement)
 
-        assert another_requirement.id in [dep.id for dep in updated.dependencies]
+        assert another_requirement.id in updated.dependencies
         assert len(updated.dependencies) == 1
 
     def test_prevent_duplicate_predecessor(self, base_requirement):
@@ -214,4 +214,4 @@ class TestRequirementDependencies:
         updated = base_requirement.link_predecessor(req3)
 
         assert len(updated.dependencies) == 1
-        assert req3.id in [dep.id for dep in updated.dependencies]
+        assert req3.id in updated.dependencies
