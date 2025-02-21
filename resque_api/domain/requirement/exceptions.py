@@ -24,3 +24,6 @@ class CommentEditPermissionError(Exception):
 
 class RequirementDependencyNotFoundError(Exception):
     """요구사항의 선행 요구사항이 존재하지 않음"""
+
+class TagNotFoundError(Exception):
+    """태그 존재하지 않음"""

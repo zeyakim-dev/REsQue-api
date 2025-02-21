@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Self
 
 from resque_api.domain.project.entities import ProjectMember
 from resque_api.domain.requirement.value_objects import RequirementStatus, RequirementPriority
-from resque_api.domain.requirement.exceptions import CommentEditPermissionError, CommentNotFoundError, RequirementDependencyNotFoundError, RequirementPriorityError, DependencyCycleError, RequirementTitleLengthError
+from resque_api.domain.requirement.exceptions import CommentEditPermissionError, CommentNotFoundError, RequirementDependencyNotFoundError, RequirementPriorityError, DependencyCycleError, RequirementTitleLengthError, TagNotFoundError 
 
 
 @dataclass(frozen=True)
@@ -75,7 +75,7 @@ class Requirement:
         """태그 제거"""
         normalized_tag = tag.strip().lower()
         if normalized_tag not in self.tags:
-            raise ValueError(f"Tag '{normalized_tag}' does not exist.")
+            raise TagNotFoundError (f"Tag '{normalized_tag}' does not exist.")
         return replace(self, tags=[t for t in self.tags if t != normalized_tag])
 
     def add_comment(self, author: ProjectMember, comment: str) -> tuple[Self, RequirementComment]:
