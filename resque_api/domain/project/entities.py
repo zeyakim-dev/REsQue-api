@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from typing import List, Self
-from uuid import UUID
+from uuid import UUID, uuid4
 from resque_api.domain.project.value_objects import (
     InvitationStatus, ProjectStatus, ProjectRole
 )
@@ -18,6 +18,7 @@ class ProjectMember:
     """프로젝트 멤버 값 객체"""
     user: User  # type: ignore
     role: ProjectRole
+    id: UUID = field(default_factory=uuid4)
 
 @dataclass(frozen=True)
 class ProjectInvitation:
