@@ -4,6 +4,7 @@ from typing import Dict, List, Self
 from uuid import UUID, uuid4
 
 from resque_api.domain.base.entity import Entity
+from resque_api.domain.base.exceptions import DuplicateItemFoundError
 from resque_api.domain.project.entities import ProjectMember
 from resque_api.domain.requirement.exceptions import (
     CommentEditPermissionError,
@@ -16,6 +17,7 @@ from resque_api.domain.requirement.exceptions import (
 from resque_api.domain.requirement.value_objects import (
     RequirementPriority,
     RequirementStatus,
+    RequirementTags,
 )
 
 
@@ -46,7 +48,7 @@ class Requirement(Entity):
     priority: RequirementPriority
 
     status: RequirementStatus = field(default_factory=RequirementStatus)
-    tags: List[str] = field(default_factory=list)
+    tags: RequirementTags = field(default_factory=RequirementTags)
     comments: Dict[UUID, RequirementComment] = field(default_factory=dict)
     dependencies: Dict[UUID, Self] = field(default_factory=dict)
 
@@ -71,19 +73,13 @@ class Requirement(Entity):
 
     def add_tag(self, tag: str) -> Self:
         """태그 추가"""
-        normalized_tag = tag.strip().lower()
-
-        if normalized_tag in self.tags:
-            return self
-
-        return replace(self, tags=[*self.tags, normalized_tag])
+        
+        return replace(self, tags=self.tags.add_tag(tag))
 
     def remove_tag(self, tag: str) -> Self:
         """태그 제거"""
-        normalized_tag = tag.strip().lower()
-        if normalized_tag not in self.tags:
-            raise TagNotFoundError(f"Tag '{normalized_tag}' does not exist.")
-        return replace(self, tags=[t for t in self.tags if t != normalized_tag])
+    
+        return replace(self, tags=self.tags.remove_tag(tag))
 
     def add_comment(
         self, author: ProjectMember, comment: str

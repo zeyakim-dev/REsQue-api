@@ -6,7 +6,7 @@ class InvalidStatusTransitionError(RequirementError):
     """잘못된 상태 전이 시도 예외"""
 
 
-class RequirementPriorityError(RequirementError):
+class InvalidPriorityError(RequirementError):
     """유효하지 않은 우선순위 값 예외"""
 
 

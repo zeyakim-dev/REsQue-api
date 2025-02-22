@@ -4,7 +4,7 @@ from typing import Generic, Iterator, Self, TypeVar
 
 from collections.abc import Collection
 
-from resque_api.domain.base.exceptions import ItemNotFoundError
+from resque_api.domain.base.exceptions import DuplicateItemFoundError, ItemNotFoundError
 
 T = TypeVar("T")
 
@@ -56,7 +56,7 @@ class VOList(BaseVOCollection[list], Generic[L]):
     def add(self, item: L) -> Self:
         """새로운 아이템을 추가한 새로운 VOList 반환 (불변 유지)"""
         if item in self.values:
-            return self
+            raise DuplicateItemFoundError(f"Item '{item}' is duplicated.")
         return VOList((*self.values, item))
 
     def remove(self, item: L) -> Self:
