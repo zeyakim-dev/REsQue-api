@@ -1,5 +1,9 @@
+import re
 from dataclasses import dataclass
 from enum import Enum
+
+from resque_api.domain.base.value_object import ValueObject
+from resque_api.domain.user.exceptions import InvalidEmailError, InvalidPasswordError
 
 
 class AuthProvider(Enum):
@@ -17,12 +21,31 @@ class UserStatus(Enum):
 
 
 @dataclass(frozen=True)
-class Password:
-    """비밀번호 값 객체"""
-
-    hashed_value: str
+class Email(ValueObject[str]):
+    """이메일 값을 래핑하는 ValueObject"""
 
     def __post_init__(self):
-        """비밀번호 정책 검증"""
-        if not self.hashed_value:
-            raise ValueError("Password hash cannot be empty")
+        """이메일 검증 수행"""
+        super().__post_init__()
+        self._validate_email()
+
+    def _validate_email(self) -> None:
+        """이메일 형식 검증"""
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(email_pattern, self.value):
+            raise InvalidEmailError(f"Invalid email format: {self.value}")
+
+
+@dataclass(frozen=True)
+class Password(ValueObject[str]):
+    """비밀번호 값 객체"""
+
+    def __post_init__(self):
+        """비밀번호 검증 수행"""
+        super().__post_init__()
+        self._validate_password()
+
+    def _validate_password(self) -> None:
+        """비밀번호 해시 값 검증"""
+        if not self.value or len(self.value) < 10:  # 길이 체크 추가
+            raise InvalidPasswordError("Password hash must be at least 10 characters long")
