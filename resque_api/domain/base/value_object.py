@@ -1,9 +1,11 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
 
 @dataclass(frozen=True)
-class ValueObject:
-    value: Any
+class ValueObject(Generic[T]):
+    value: T
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ValueObject):
