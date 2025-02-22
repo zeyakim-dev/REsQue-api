@@ -18,7 +18,7 @@ class ValueObject(Generic[T]):
         return self.value == other.value
 
 
-class BaseVOCollection(Collection[T], Generic[T]):
+class BaseVOCollection(Collection[T]):
     """Value Object 컬렉션을 위한 기본 추상 클래스"""
 
     values: Collection[T]
@@ -45,25 +45,49 @@ class BaseVOCollection(Collection[T], Generic[T]):
         """컬렉션 순회"""
         return iter(self.values)
 
+L = TypeVar("L")
 
 @dataclass(frozen=True)
-class VOList(Collection[T], Generic[T]):
+class VOList(BaseVOCollection[list], Generic[L]):
     """VO의 리스트를 관리하는 불변 컬렉션"""
 
-    values: tuple[T, ...] = field(default_factory=tuple)
+    values: tuple[L, ...] = field(default_factory=tuple)
 
-    def add(self, item: T) -> Self:
+    def add(self, item: L) -> Self:
         """새로운 아이템을 추가한 새로운 VOList 반환 (불변 유지)"""
         if item in self.values:
             return self
         return VOList((*self.values, item))
 
-    def remove(self, item: T) -> Self:
+    def remove(self, item: L) -> Self:
         """아이템을 제거한 새로운 VOList 반환 (불변 유지)"""
         if item not in self.values:
             raise ItemNotFoundError(f"Item '{item}' not found in VOList.")
         return VOList(tuple(v for v in self.values if v != item))
 
-    def as_list(self) -> list[T]:
+    def as_list(self) -> list[L]:
         """리스트 형태로 반환"""
         return list(self.values)
+
+K = TypeVar("K")
+V = TypeVar("V")
+
+@dataclass(frozen=True)
+class VODict(BaseVOCollection[dict], Generic[K, V]):
+    """VO의 딕셔너리를 관리하는 불변 컬렉션"""
+
+    values: dict[K, V] = field(default_factory=dict)
+
+    def add(self, key: K, value: V) -> Self:
+        """새로운 키-값 쌍을 추가한 새로운 VODict 반환 (불변 유지)"""
+        return VODict({**self.values, key: value})
+
+    def remove(self, key: K) -> Self:
+        """키-값 쌍을 제거한 새로운 VODict 반환 (불변 유지)"""
+        if key not in self.values:
+            raise ItemNotFoundError(f"Key '{key}' not found in VODict.")
+        return VODict({k: v for k, v in self.values.items() if key != k})
+
+    def as_dict(self) -> dict[K, V]:
+        """딕셔너리 형태로 반환"""
+        return self.values
