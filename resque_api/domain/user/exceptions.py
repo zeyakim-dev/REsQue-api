@@ -1,8 +1,3 @@
-class InvalidEmailError(Exception):
-    """잘못된 이메일 형식 예외"""
-
-    pass
-
 class InvalidPasswordError(Exception):
     """잘못된 비밀번호 예외"""
 

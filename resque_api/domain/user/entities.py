@@ -4,8 +4,9 @@ from datetime import datetime
 from uuid import UUID
 
 from resque_api.domain.base.aggregate import Aggregate
-from resque_api.domain.user.exceptions import InactiveUserError, InvalidEmailError
-from resque_api.domain.user.value_objects import AuthProvider, Email, Password, UserStatus
+from resque_api.domain.common.value_objects import Email
+from resque_api.domain.user.exceptions import InactiveUserError
+from resque_api.domain.user.value_objects import AuthProvider, Password, UserStatus
 
 
 @dataclass(frozen=True)
