@@ -1,15 +1,15 @@
 from dataclasses import dataclass, field, replace
 from datetime import datetime
-from typing import Dict, List, Optional, Self
+from typing import Dict, List, Self
 from uuid import UUID, uuid4
 
+from resque_api.domain.base.entity import Entity
 from resque_api.domain.project.entities import ProjectMember
 from resque_api.domain.requirement.exceptions import (
     CommentEditPermissionError,
     CommentNotFoundError,
     DependencyCycleError,
     RequirementDependencyNotFoundError,
-    RequirementPriorityError,
     RequirementTitleLengthError,
     TagNotFoundError,
 )
@@ -20,15 +20,13 @@ from resque_api.domain.requirement.value_objects import (
 
 
 @dataclass(frozen=True)
-class RequirementComment:
+class RequirementComment(Entity):
     """요구사항 코멘트 엔티티"""
-
     requirement_id: UUID
     author_id: UUID
     content: str
-    created_at: datetime
-
-    id: UUID = field(default_factory=uuid4)
+    
+    created_at: datetime = field(default_factory=datetime.utcnow())
 
     def edit_content(self, new_content: str) -> Self:
         """코멘트 내용 수정"""
@@ -36,7 +34,7 @@ class RequirementComment:
 
 
 @dataclass(frozen=True)
-class Requirement:
+class Requirement(Entity):
     """요구사항 도메인 엔티티"""
 
     project_id: UUID
@@ -47,8 +45,7 @@ class Requirement:
     updated_at: datetime
     priority: RequirementPriority
 
-    id: UUID = field(default_factory=uuid4)
-    status: RequirementStatus = field(default=RequirementStatus.TODO)
+    status: RequirementStatus = field(default_factory=RequirementStatus)
     tags: List[str] = field(default_factory=list)
     comments: Dict[UUID, RequirementComment] = field(default_factory=dict)
     dependencies: Dict[UUID, Self] = field(default_factory=dict)
@@ -70,8 +67,6 @@ class Requirement:
 
     def set_priority(self, priority: int) -> Self:
         """우선순위 설정"""
-        if not 1 <= priority <= 3:
-            raise RequirementPriorityError("Priority must be between 1 and 3")
         return replace(self, priority=RequirementPriority(priority))
 
     def add_tag(self, tag: str) -> Self:
@@ -98,7 +93,6 @@ class Requirement:
             requirement_id=self.id,
             author_id=author.id,
             content=comment,
-            created_at=datetime.utcnow(),
         )
         return (
             replace(self, comments={**self.comments, new_comment.id: new_comment}),

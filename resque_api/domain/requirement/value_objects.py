@@ -57,7 +57,7 @@ class RequirementStatusEnum(Enum):
 class RequirementStatus(ValueObject[RequirementStatusEnum]):
     """요구사항 상태 Value Object"""
 
-    value: RequirementStatusEnum
+    value: RequirementStatusEnum = RequirementStatusEnum.TODO
     _VALID_TRANSITIONS = {
         RequirementStatusEnum.TODO: {RequirementStatusEnum.IN_PROGRESS},
         RequirementStatusEnum.IN_PROGRESS: {RequirementStatusEnum.TODO, RequirementStatusEnum.DONE},
