@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Self
 
-from resque_api.domain.base.value_object import ValueObject
+from resque_api.domain.base.value_object import VOList, ValueObject
 from resque_api.domain.requirement.exceptions import InvalidStatusTransitionError, InvalidPriorityError, RequirementTitleLengthError, TagNotFoundError
 
 @dataclass(frozen=True)
@@ -28,28 +28,22 @@ class RequirementDescription(ValueObject[str]):
 
 
 @dataclass(frozen=True)
-class RequirementTags:
+class RequirementTags(VOList[str]):
     """요구사항 태그 VO"""
 
-    values: list[str]
-
-    def __post_init__(self):
-        self._validate_tags()
-
-    def _validate_tags(self):
-        """태그 정리 및 중복 제거"""
-        object.__setattr__(self, "values", sorted(set(t.lower().strip() for t in self.values)))
+    def _normalize_tag(self, tag: str) -> str:
+        """태그 정규화"""
+        return tag.lower().strip()
 
     def add_tag(self, tag: str) -> Self:
         """태그 추가"""
-        return RequirementTags(self.values + [tag])
+
+        return RequirementTags.add(self._normalize_tag(tag))
 
     def remove_tag(self, tag: str) -> Self:
         """태그 제거"""
-        normalized_tag = tag.strip().lower()
-        if normalized_tag not in self.values:
-            raise TagNotFoundError(f"Tag '{normalized_tag}' does not exist.")
-        return RequirementTags([t for t in self.values if t != normalized_tag])
+
+        return RequirementTags.remove(self._normalize_tag(tag))
 
 
 class RequirementStatusEnum(Enum):
