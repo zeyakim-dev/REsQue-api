@@ -4,7 +4,6 @@ from typing import Dict, List, Self
 from uuid import UUID, uuid4
 
 from resque_api.domain.base.entity import Entity
-from resque_api.domain.base.exceptions import DuplicateItemFoundError
 from resque_api.domain.project.entities import ProjectMember
 from resque_api.domain.requirement.exceptions import (
     CommentEditPermissionError,
@@ -12,9 +11,10 @@ from resque_api.domain.requirement.exceptions import (
     DependencyCycleError,
     RequirementDependencyNotFoundError,
     RequirementTitleLengthError,
-    TagNotFoundError,
 )
 from resque_api.domain.requirement.value_objects import (
+    RequirementTitle,
+    RequirementDescription,
     RequirementPriority,
     RequirementStatus,
     RequirementTags,
@@ -28,7 +28,7 @@ class RequirementComment(Entity):
     author_id: UUID
     content: str
     
-    created_at: datetime = field(default_factory=datetime.utcnow())
+    created_at: datetime = field(default_factory=datetime.utcnow)
 
     def edit_content(self, new_content: str) -> Self:
         """코멘트 내용 수정"""
@@ -40,8 +40,8 @@ class Requirement(Entity):
     """요구사항 도메인 엔티티"""
 
     project_id: UUID
-    title: str
-    description: str
+    title: RequirementTitle
+    description: RequirementDescription
     assignee: ProjectMember | None
     created_at: datetime
     updated_at: datetime
@@ -65,15 +65,17 @@ class Requirement(Entity):
 
     def change_status(self, new_status: RequirementStatus) -> Self:
         """요구사항 상태 변경"""
+        
         return replace(self, status=self.status.change_status(new_status))
 
     def set_priority(self, priority: int) -> Self:
         """우선순위 설정"""
+
         return replace(self, priority=RequirementPriority(priority))
 
     def add_tag(self, tag: str) -> Self:
         """태그 추가"""
-        
+
         return replace(self, tags=self.tags.add_tag(tag))
 
     def remove_tag(self, tag: str) -> Self:
