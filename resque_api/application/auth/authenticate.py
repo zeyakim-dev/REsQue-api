@@ -1,10 +1,13 @@
-from resque_api.domain.user.value_objects import Password
-from resque_api.domain.user.entities import User
 from resque_api.application.ports.security import PasswordHasher
+from resque_api.domain.user.entities import User
+from resque_api.domain.user.value_objects import Password
 
-def authenticate_user(user: User, plain_password: str, password_hasher: PasswordHasher) -> bool:
+
+def authenticate_user(
+    user: User, plain_password: str, password_hasher: PasswordHasher
+) -> bool:
     """사용자 인증
-    
+
     Args:
         user: 인증할 사용자
         plain_password: 평문 비밀번호
@@ -15,5 +18,5 @@ def authenticate_user(user: User, plain_password: str, password_hasher: Password
 
     if not user.can_authenticate():
         return False
-        
+
     return password_hasher.verify(plain_password, user.password.hashed_value)

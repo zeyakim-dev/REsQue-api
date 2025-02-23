@@ -1,15 +1,21 @@
 from datetime import datetime
 from uuid import uuid4
+
 import pytest
+
+from resque_api.domain.project.entities import ProjectMember
 from resque_api.domain.requirement.entities import Requirement
-from resque_api.domain.requirement.value_objects import RequirementPriority, RequirementStatus
 from resque_api.domain.requirement.exceptions import (
+    DependencyCycleError,
     InvalidStatusTransitionError,
     RequirementPriorityError,
     RequirementTitleLengthError,
-    DependencyCycleError
 )
-from resque_api.domain.project.entities import ProjectMember
+from resque_api.domain.requirement.value_objects import (
+    RequirementPriority,
+    RequirementStatus,
+)
+
 
 class TestRequirementCreation:
     def test_create_valid_requirement(self, base_requirement):
@@ -34,8 +40,9 @@ class TestRequirementCreation:
                 priority=1,
                 tags=[],
                 comments=[],
-                dependencies=[]
+                dependencies=[],
             )
+
 
 class TestRequirementStatusTransitions:
     def test_valid_status_transition(self, requirement_by_status):
@@ -55,6 +62,7 @@ class TestRequirementStatusTransitions:
             with pytest.raises(InvalidStatusTransitionError):
                 requirement_by_status.change_status(RequirementStatus.TODO)
 
+
 class TestRequirementPriority:
     @pytest.mark.parametrize("priority", [1, 2, 3])
     def test_set_valid_priority(self, base_requirement, priority):
@@ -68,6 +76,7 @@ class TestRequirementPriority:
         with pytest.raises(RequirementPriorityError):
             base_requirement.set_priority(priority)
 
+
 class TestRequirementTags:
     def test_add_and_remove_tags(self, base_requirement):
         """태그 추가 및 제거 테스트"""
@@ -77,13 +86,14 @@ class TestRequirementTags:
         updated = updated.remove_tag("urgent")
         assert "urgent" not in updated.tags
 
+
 class TestRequirementComments:
     def test_add_comment(self, base_requirement, sample_user):
         """코멘트 추가 테스트"""
         updated, comment = base_requirement.add_comment(sample_user, "Test comment")
         assert len(updated.comments) == 1
         assert updated.comments[comment.id].content == "Test comment"
-    
+
     def test_edit_comment_content(self, base_requirement, sample_user):
         """코멘트 내용 수정 테스트"""
         updated, comment = base_requirement.add_comment(sample_user, "Initial content")
@@ -92,6 +102,7 @@ class TestRequirementComments:
         assert edited_comment.requirement_id == comment.requirement_id
         assert edited_comment.author_id == comment.author_id
         assert edited_comment.created_at == comment.created_at
+
 
 class TestRequirementAssignee:
     def test_change_assignee(self, base_requirement, new_assignee: ProjectMember):
@@ -123,7 +134,7 @@ class TestRequirementDependencies:
             assignee=None,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
-            priority=RequirementPriority(1)
+            priority=RequirementPriority(1),
         )
 
         updated = base_requirement.link_predecessor(another_requirement)
@@ -140,7 +151,7 @@ class TestRequirementDependencies:
             assignee=None,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
-            priority=RequirementPriority(3)
+            priority=RequirementPriority(3),
         )
 
         updated = base_requirement.link_predecessor(another_requirement)
@@ -162,7 +173,7 @@ class TestRequirementDependencies:
             assignee=None,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
-            priority=RequirementPriority(2)
+            priority=RequirementPriority(2),
         )
 
         req_c = Requirement(
@@ -172,7 +183,7 @@ class TestRequirementDependencies:
             assignee=None,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
-            priority=RequirementPriority(1)
+            priority=RequirementPriority(1),
         )
 
         req_b = base_requirement.link_predecessor(req_b)
@@ -192,7 +203,7 @@ class TestRequirementDependencies:
             assignee=None,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
-            priority=RequirementPriority(3)
+            priority=RequirementPriority(3),
         )
 
         req2 = req1.link_predecessor(
@@ -203,7 +214,7 @@ class TestRequirementDependencies:
                 assignee=None,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
-                priority=RequirementPriority(2)
+                priority=RequirementPriority(2),
             )
         )
 
@@ -215,7 +226,7 @@ class TestRequirementDependencies:
                 assignee=None,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
-                priority=RequirementPriority(1)
+                priority=RequirementPriority(1),
             )
         )
 
@@ -233,7 +244,7 @@ class TestRequirementDependencies:
             assignee=None,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
-            priority=RequirementPriority(1)
+            priority=RequirementPriority(1),
         )
 
         updated = base_requirement.link_predecessor(another_requirement)
