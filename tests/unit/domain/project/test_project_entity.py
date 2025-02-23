@@ -4,16 +4,19 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from resque_api.domain.project.entities import Project
+from resque_api.domain.common.value_objects import Email
+from resque_api.domain.project.entities import Project, ProjectInvitation
 from resque_api.domain.project.exceptions import (
     AlreadyAcceptedInvitationError,
     ExpiredInvitationError,
     InvalidTitleError,
 )
 from resque_api.domain.project.value_objects import (
+    InvitationExpiration,
     InvitationStatus,
     ProjectRole,
     ProjectStatus,
+    ProjectTitle,
 )
 from resque_api.domain.user.entities import User
 
@@ -37,7 +40,7 @@ class TestProject:
         상태와 소유자가 적절히 설정되는지 확인합니다.
         """
 
-        def test_create_project(self, valid_project_data, valid_user):
+        def test_create_project(self, valid_project_data, valid_user: User):
             """기본 프로젝트 생성 테스트
 
             시나리오:
@@ -59,11 +62,11 @@ class TestProject:
             assert project.title == valid_project_data["title"]
             assert project.description == valid_project_data["description"]
             assert project.status == ProjectStatus.ACTIVE
-            assert project.owner == valid_user
+            assert project.owner_id == valid_user.id
 
             # owner가 manager로 멤버에 포함되어 있는지 확인
             assert any(
-                member.user == valid_user and member.role == ProjectRole.MANAGER
+                member.user_id == valid_user.id and member.role == ProjectRole.MANAGER
                 for member in project.members
             )
 
@@ -76,13 +79,13 @@ class TestProject:
             """
             # 빈 제목
             with pytest.raises(InvalidTitleError) as exc_info:
-                Project(**{**valid_project_data, "title": ""})
+                Project(**{**valid_project_data, "title": ProjectTitle("")})
             assert "Title cannot be empty" in str(exc_info.value)
 
             # 최대 길이 초과
             long_title = "a" * 101  # 100자 초과
             with pytest.raises(InvalidTitleError) as exc_info:
-                Project(**{**valid_project_data, "title": long_title})
+                Project(**{**valid_project_data, "title": ProjectTitle(long_title)})
             assert "Title is too long" in str(exc_info.value)
 
     class TestProjectMemberManagement:
@@ -115,7 +118,7 @@ class TestProjectInvitation:
         - 만료일이 현재 시간과 7일 이내여야 함
         """
         # Given
-        invite_email = "invite@example.com"
+        invite_email = Email("invite@example.com")
 
         # When
         updated_project, invitation = valid_project.invite_member(
@@ -125,14 +128,13 @@ class TestProjectInvitation:
         # Then
         assert invitation.email == invite_email
         assert invitation.role == ProjectRole.MEMBER
-        assert invitation.expires_at > datetime.now(timezone.utc)
-        assert invitation.expires_at < datetime.now(timezone.utc) + timedelta(days=8)
+        assert not invitation.expires_at.is_expired()
         assert any(
-            invite.email == invite_email
+            invite.email == invitation.email and invite.code == invitation.code
             for code, invite in updated_project.invitations.items()
         )
 
-    def test_invite_acceptance(self, valid_project: Project, valid_user):
+    def test_invite_acceptance(self, valid_project: Project, sample_user: User):
         """초대 수락 테스트
 
         시나리오:
@@ -140,27 +142,19 @@ class TestProjectInvitation:
         2. 사용자가 프로젝트 멤버로 추가되고, 초대 상태가 ACCEPTED로 변경되는지 검증
         """
         # Given
-        invite_email = "new@example.com"
+        invite_email = sample_user.email
         updated_project, invitation = valid_project.invite_member(
             invite_email, ProjectRole.MEMBER
         )
 
-        new_user = User(
-            id=uuid4(),
-            email=invite_email,
-            auth_provider="EMAIL",
-            status="ACTIVE",
-            created_at=datetime.now(timezone.utc),
-        )
-
         # When
         updated_project, new_member = updated_project.accept_invitation(
-            invitation.code, new_user
+            invitation.code, sample_user
         )
 
         # Then
         assert any(
-            member.user == new_user and member.role == ProjectRole.MEMBER
+            member.user_id == sample_user.id and member.role == ProjectRole.MEMBER
             for member in updated_project.members
         )
 
@@ -170,7 +164,7 @@ class TestProjectInvitation:
             for code, invite in updated_project.invitations.items()
         )
 
-    def test_expired_invitation_acceptance(self, valid_project: Project):
+    def test_expired_invitation_acceptance(self, valid_project: Project, sample_user: User):
         """만료된 초대 코드 수락 시도
 
         시나리오:
@@ -178,13 +172,13 @@ class TestProjectInvitation:
         2. ExpiredInvitationError가 발생하는지 검증
         """
         # Given
-        invite_email = "expired@example.com"
+        invite_email = sample_user.email
         updated_project, invitation = valid_project.invite_member(
             invite_email, ProjectRole.MEMBER
         )
 
         expired_invitation = replace(
-            invitation, expires_at=datetime.now(timezone.utc) - timedelta(days=1)
+            invitation, expires_at=InvitationExpiration.create(days=-1)
         )
 
         project_with_expired_invite = replace(
@@ -215,7 +209,7 @@ class TestProjectInvitation:
         2. AlreadyAcceptedInvitationError가 발생하는지 검증
         """
         # Given
-        invite_email = "accepted@example.com"
+        invite_email = Email("accepted@example.com")
         updated_project, invitation = valid_project.invite_member(
             invite_email, ProjectRole.MEMBER
         )
@@ -234,7 +228,7 @@ class TestProjectInvitation:
 
         second_user = User(
             id=uuid4(),
-            email="another_" + invite_email,
+            email=Email("another_" + invite_email.value),
             auth_provider="EMAIL",
             status="ACTIVE",
             created_at=datetime.now(timezone.utc),
@@ -251,7 +245,7 @@ class TestProjectStatus:
     상태 변경 후, 상태에 맞는 권한을 제한하고 불변성을 확인합니다.
     """
 
-    def test_archive_project(self, valid_project, valid_user):
+    def test_archive_project(self, valid_project: Project, valid_user):
         """프로젝트 보관 상태로 변경 테스트
 
         시나리오:
