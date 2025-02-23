@@ -1,204 +1,88 @@
-from datetime import datetime, timedelta, timezone
-from typing import Any, Generator
-from uuid import uuid4
+from dataclasses import replace
+from datetime import datetime, timezone
+import hashlib
 
 import pytest
+from uuid import uuid4
 
+from resque_api.domain.common.value_objects import Email
 from resque_api.domain.project.entities import Project, ProjectMember
 from resque_api.domain.project.value_objects import ProjectRole, ProjectStatus
-from resque_api.domain.requirement.entities import Requirement, RequirementComment
-from resque_api.domain.requirement.value_objects import RequirementStatus
+from resque_api.domain.user.value_objects import AuthProvider, UserStatus, Password
 from resque_api.domain.user.entities import User
-from resque_api.domain.user.value_objects import AuthProvider, Password, UserStatus
-from resque_api.infrastructure.security.password_hasher import BcryptPasswordHasher
 
 
 @pytest.fixture
-def hasher():
-    """테스트용 해셔 인스턴스"""
-    return BcryptPasswordHasher(rounds=4)
-
-
-@pytest.fixture
-def valid_user_data(hasher):
-    """테스트용 사용자 데이터"""
-    plain_password = "secure_password123"
-    hashed_password = hasher.hash(plain_password)
-
+def valid_user_data():
+    """유효한 사용자 데이터를 반환"""
     return {
         "id": uuid4(),
-        "email": "test@example.com",
+        "email": "user@example.com",
         "auth_provider": AuthProvider.EMAIL,
         "status": UserStatus.ACTIVE,
         "created_at": datetime.now(timezone.utc),
-        "password": Password(hashed_value=hashed_password),
+        "password": Password(hashlib.sha256("validPassword123".encode()).hexdigest())
     }
 
 
 @pytest.fixture
-def valid_user():
-    """테스트용 사용자"""
-    return User(
-        id=uuid4(),
-        email="owner@example.com",
-        auth_provider="EMAIL",
-        status="ACTIVE",
-        created_at=datetime.now(timezone.utc),
-    )
+def valid_user(valid_user_data):
+    """유효한 사용자 객체 반환"""
+    return User(**valid_user_data)
 
 
 @pytest.fixture
 def valid_project_data(valid_user):
-    """테스트용 프로젝트 데이터"""
+    """유효한 프로젝트 데이터"""
     return {
-        "id": uuid4(),
         "title": "Test Project",
-        "description": "Test project description",
+        "description": "A description for the test project",
         "status": ProjectStatus.ACTIVE,
-        "owner": valid_user,
+        "owner_id": valid_user.id,
         "created_at": datetime.now(timezone.utc),
-        "members": [],
-        "invitations": {},
     }
 
 
 @pytest.fixture
-def valid_project(valid_project_data) -> Project:
-    """테스트용 프로젝트"""
-    return Project(**valid_project_data)
+def valid_project(valid_project_data):
+    """유효한 프로젝트 객체 생성"""
+    project = Project(**valid_project_data)
 
+    # 프로젝트 생성 후 기본 소유자(MANAGER) 추가
+    new_member = ProjectMember(user_id=valid_project_data["owner_id"], role=ProjectRole.MANAGER)
+    project = replace(project, members=[new_member])
+    
+    return project
 
-@pytest.fixture(scope="module")
-def sample_user() -> Generator[User, None, None]:
-    """모듈 단위 재사용 사용자"""
-    yield User(
-        id=uuid4(),
-        email="testuser@example.com",
-        auth_provider="EMAIL",
-        status="ACTIVE",
-        created_at=datetime.now(timezone.utc),
-    )
+@pytest.fixture
+def sample_user() -> User:
+    """새로운 사용자 객체 반환"""
+    sample_user_data = {
+        "email": Email("sampleuser@example.com"),
+        "auth_provider": AuthProvider.EMAIL,
+        "status": UserStatus.ACTIVE,
+        "created_at": datetime.now(timezone.utc),
+        "password": Password("samplePassword123")
+    }
+    return User(**sample_user_data)
 
 
 @pytest.fixture
-def project_with_member(sample_user: User) -> Project:
-    """멤버가 포함된 프로젝트"""
-    member = ProjectMember(user=sample_user, role="MEMBER")
-    return Project(
-        id=uuid4(),
-        title="Test Project",
-        description="Test Description",
-        status="ACTIVE",
-        owner=sample_user,
-        created_at=datetime.now(timezone.utc),
-        members=[member],
-        invitations={},
-    )
-
-
-@pytest.fixture(params=[1, 2, 3])
-def valid_priority(request) -> int:
-    """유효한 우선순위 값 (1-3)"""
-    return request.param
-
-
-@pytest.fixture(params=[0, 4])
-def invalid_priority(request) -> int:
-    """잘못된 우선순위 값"""
-    return request.param
+def project_with_sample_user(valid_project: Project, sample_user: User) -> Project:
+    """새 사용자 포함된 프로젝트"""
+    new_member = ProjectMember(user_id=sample_user.id, role=ProjectRole.MEMBER)
+    updated_project = replace(valid_project, members=[*valid_project.members, new_member])
+    return updated_project
 
 
 @pytest.fixture
-def assignee(valid_user: User) -> ProjectMember:
-    return ProjectMember(user=valid_user, role=ProjectRole.MANAGER)
-
-
-@pytest.fixture
-def base_requirement(
-    project_with_member: Project, assignee: ProjectMember
-) -> Requirement:
-    """기본 요구사항 템플릿"""
-    return Requirement(
-        project_id=project_with_member.id,
-        title="Sample Requirement",
-        description="Initial Description",
-        assignee=assignee,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
-        priority=2,
-    )
-
+def sample_member(project_with_sample_user: Project, sample_user: User) -> ProjectMember:
+    """새 사용자의 프로젝트 멤버 반환"""
+    return [member for member in project_with_sample_user.members if member.user_id == sample_user.id][0]
 
 @pytest.fixture
-def sample_requirement(base_requirement: Requirement) -> Requirement:
-    """일반적인 요구사항 인스턴스"""
-    return base_requirement
-
-
-@pytest.fixture
-def requirement_with_tags(base_requirement: Requirement) -> Requirement:
-    """태그가 포함된 요구사항"""
-    return base_requirement.add_tag("backend").add_tag("urgent")
-
-
-@pytest.fixture
-def requirement_with_comments(
-    base_requirement: Requirement, sample_user: User
-) -> Requirement:
-    """코멘트가 포함된 요구사항"""
-    return base_requirement.add_comment(sample_user, "First comment").add_comment(
-        sample_user, "Second comment"
-    )
-
-
-@pytest.fixture(
-    params=[
-        RequirementStatus.TODO,
-        RequirementStatus.IN_PROGRESS,
-        RequirementStatus.DONE,
-    ]
-)
-def requirement_by_status(request: Any, base_requirement: Requirement) -> Requirement:
-    """다양한 상태의 요구사항 생성"""
-    return Requirement(
-        project_id=base_requirement.project_id,
-        title=base_requirement.title,
-        description=base_requirement.description,
-        assignee=assignee,
-        status=request.param,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
-        priority=2,
-        tags=base_requirement.tags,
-        comments=base_requirement.comments,
-        dependencies=base_requirement.dependencies,
-    )
-
-
-@pytest.fixture
-def new_assignee():
-    """새로운 담당자(ProjectMember) 생성 픽스처"""
-    user = User(
-        id=uuid4(),
-        email="new_assignee@example.com",
-        auth_provider="EMAIL",
-        status="ACTIVE",
-        created_at=datetime.now(timezone.utc),
-    )
-
-    return ProjectMember(
-        user=user,
-        role="developer",
-    )
-
-
-@pytest.fixture
-def sample_comment(sample_user: User) -> RequirementComment:
-    """테스트용 코멘트 인스턴스"""
-    return RequirementComment(
-        id=uuid4(),
-        requirement_id=uuid4(),
-        author_id=sample_user.id,
-        content="Sample comment",
-        created_at=datetime.now(timezone.utc),
-    )
+def another_member(project_with_sample_user: Project) -> ProjectMember:
+    new_user_id = uuid4()
+    new_member = ProjectMember(user_id=new_user_id, role=ProjectRole.MEMBER)
+    updated_project = replace(project_with_sample_user, members=[*project_with_sample_user.members, new_member])
+    return [member for member in updated_project.members if member.user_id == new_user_id][0]

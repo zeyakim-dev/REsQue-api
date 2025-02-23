@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from resque_api.domain.base.value_object import ValueObject
-from resque_api.domain.user.exceptions import InvalidEmailError, InvalidPasswordError
+from resque_api.domain.user.exceptions import InvalidPasswordError
 
 
 class AuthProvider(Enum):
@@ -26,7 +26,6 @@ class Password(ValueObject[str]):
 
     def __post_init__(self):
         """비밀번호 검증 수행"""
-        super().__post_init__()
         self._validate_password()
 
     def _validate_password(self) -> None:

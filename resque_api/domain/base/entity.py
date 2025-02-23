@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID, uuid4
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Entity(ABC):
     id: UUID = field(default_factory=uuid4)
 

@@ -18,22 +18,22 @@ class ValueObject(Generic[T]):
         return self.value == other.value
 
 
-class BaseVOCollection(Collection[T]):
+class BaseVOCollection(Collection[ValueObject]):
     """Value Object 컬렉션을 위한 기본 추상 클래스"""
 
-    values: Collection[T]
+    values: Collection[ValueObject]
 
     @abstractmethod
-    def add(self, item: T) -> Self:
+    def add(self, item: ValueObject) -> Self:
         """아이템을 컬렉션에 추가하고 새로운 컬렉션 반환"""
         pass
 
     @abstractmethod
-    def remove(self, item: T) -> Self:
+    def remove(self, item: ValueObject) -> Self:
         """아이템을 컬렉션에서 제거하고 새로운 컬렉션 반환"""
         pass
 
-    def __contains__(self, item: T) -> bool:
+    def __contains__(self, item: ValueObject) -> bool:
         """해당 아이템이 컬렉션에 포함되어 있는지 확인"""
         return item in self.values
 
@@ -41,7 +41,7 @@ class BaseVOCollection(Collection[T]):
         """컬렉션의 길이 반환"""
         return len(self.values)
 
-    def __iter__(self) -> Iterator[T]:
+    def __iter__(self) -> Iterator[ValueObject]:
         """컬렉션 순회"""
         return iter(self.values)
 
@@ -57,13 +57,13 @@ class VOList(BaseVOCollection[list], Generic[L]):
         """새로운 아이템을 추가한 새로운 VOList 반환 (불변 유지)"""
         if item in self.values:
             raise DuplicateItemFoundError(f"Item '{item}' is duplicated.")
-        return VOList((*self.values, item))
+        return self.__class__((*self.values, item))
 
     def remove(self, item: L) -> Self:
         """아이템을 제거한 새로운 VOList 반환 (불변 유지)"""
         if item not in self.values:
             raise ItemNotFoundError(f"Item '{item}' not found in VOList.")
-        return VOList(tuple(v for v in self.values if v != item))
+        return self.__class__(tuple(v for v in self.values if v != item))
 
     def as_list(self) -> list[L]:
         """리스트 형태로 반환"""

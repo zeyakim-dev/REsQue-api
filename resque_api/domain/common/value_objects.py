@@ -12,7 +12,6 @@ class Email(ValueObject[str]):
 
     def __post_init__(self):
         """이메일 검증 수행"""
-        super().__post_init__()
         self._validate_email()
 
     def _validate_email(self) -> None:

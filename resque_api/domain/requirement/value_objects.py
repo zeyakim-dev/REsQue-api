@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Self
 
-from resque_api.domain.base.value_object import VOList, ValueObject
+from resque_api.domain.base.value_object import V, VOList, ValueObject
 from resque_api.domain.requirement.exceptions import InvalidStatusTransitionError, InvalidPriorityError, RequirementTitleLengthError, TagNotFoundError
 
 @dataclass(frozen=True)
@@ -26,24 +26,27 @@ class RequirementDescription(ValueObject[str]):
         if len(self.value) < 5:
             raise ValueError("설명은 최소 5자 이상이어야 합니다.")
 
-
 @dataclass(frozen=True)
-class RequirementTags(VOList[str]):
+class RequirementTag(ValueObject[str]):
     """요구사항 태그 VO"""
 
-    def _normalize_tag(self, tag: str) -> str:
-        """태그 정규화"""
-        return tag.lower().strip()
+    @classmethod
+    def create(cls, tag: str) -> Self:
+        return cls(value=tag.lower().strip())
+
+@dataclass(frozen=True)
+class RequirementTags(VOList[RequirementTag]):
+    """요구사항 태그 VO 저장"""
 
     def add_tag(self, tag: str) -> Self:
         """태그 추가"""
 
-        return RequirementTags.add(self._normalize_tag(tag))
+        return self.add(RequirementTag.create(tag))
 
     def remove_tag(self, tag: str) -> Self:
         """태그 제거"""
-
-        return RequirementTags.remove(self._normalize_tag(tag))
+    
+        return self.remove(RequirementTag.create(tag))
 
 
 class RequirementStatusEnum(Enum):

@@ -1,5 +1,5 @@
 import re
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from uuid import UUID
 
@@ -13,11 +13,12 @@ from resque_api.domain.user.value_objects import AuthProvider, Password, UserSta
 class User(Aggregate):
     """사용자 엔티티 (Aggregate Root)"""
 
-    email: Email
-    auth_provider: AuthProvider
     status: UserStatus
     created_at: datetime
-    password: Password = None
+    email: Email
+    
+    auth_provider: AuthProvider = field(default=AuthProvider.EMAIL)
+    password: Password | None = field(default=None)
 
     def can_authenticate(self) -> bool:
         """인증 가능 여부 확인"""
