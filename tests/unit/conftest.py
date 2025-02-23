@@ -1,5 +1,6 @@
 from dataclasses import replace
 from datetime import datetime, timezone
+import hashlib
 
 import pytest
 from uuid import uuid4
@@ -20,7 +21,7 @@ def valid_user_data():
         "auth_provider": AuthProvider.EMAIL,
         "status": UserStatus.ACTIVE,
         "created_at": datetime.now(timezone.utc),
-        "password": Password("validPassword123")
+        "password": Password(hashlib.sha256("validPassword123".encode()).hexdigest())
     }
 
 
@@ -77,4 +78,11 @@ def project_with_sample_user(valid_project: Project, sample_user: User) -> Proje
 @pytest.fixture
 def sample_member(project_with_sample_user: Project, sample_user: User) -> ProjectMember:
     """새 사용자의 프로젝트 멤버 반환"""
-    return [member for member in project_with_sample_user.members if member.id == sample_user.id]
+    return [member for member in project_with_sample_user.members if member.user_id == sample_user.id][0]
+
+@pytest.fixture
+def another_member(project_with_sample_user: Project) -> ProjectMember:
+    new_user_id = uuid4()
+    new_member = ProjectMember(user_id=new_user_id, role=ProjectRole.MEMBER)
+    updated_project = replace(project_with_sample_user, members=[*project_with_sample_user.members, new_member])
+    return [member for member in updated_project.members if member.user_id == new_user_id][0]

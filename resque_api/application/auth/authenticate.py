@@ -1,6 +1,5 @@
 from resque_api.application.ports.security import PasswordHasher
 from resque_api.domain.user.entities import User
-from resque_api.domain.user.value_objects import Password
 
 
 def authenticate_user(
@@ -19,4 +18,4 @@ def authenticate_user(
     if not user.can_authenticate():
         return False
 
-    return password_hasher.verify(plain_password, user.password.hashed_value)
+    return password_hasher.verify(plain_password, user.password.value)
