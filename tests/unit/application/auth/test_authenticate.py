@@ -10,7 +10,7 @@ class TestAuthenticate:
         """사용자 인증 성공 테스트"""
         # Given
         user = User(**valid_user_data)
-        plain_password = "secure_password123"
+        plain_password = "validPassword123"
 
         # When
         is_authenticated = authenticate_user(user, plain_password, hasher)
