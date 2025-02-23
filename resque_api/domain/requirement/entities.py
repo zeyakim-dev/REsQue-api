@@ -32,6 +32,8 @@ class RequirementComment(Entity):
 
     def edit_content(self, new_content: str) -> Self:
         """코멘트 내용 수정"""
+        if self.content == new_content:
+            return self
         return replace(self, content=new_content)
 
 
