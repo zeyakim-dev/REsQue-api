@@ -50,7 +50,7 @@ class Requirement(Entity):
     status: RequirementStatus = field(default_factory=RequirementStatus)
     tags: RequirementTags = field(default_factory=RequirementTags)
     comments: Dict[UUID, RequirementComment] = field(default_factory=dict)
-    dependencies: Dict[UUID, Self] = field(default_factory=dict)
+    dependencies: list[UUID] = field(default_factory=list)
 
     def __post_init__(self):
         """초기화 시 유효성 검증"""
@@ -124,37 +124,18 @@ class Requirement(Entity):
         if requirement.id in self.dependencies:
             return self
 
-        if self.has_cycle(requirement):
-            raise DependencyCycleError("Cyclic dependency detected.")
-
         return replace(
-            self, dependencies={**self.dependencies, requirement.id: requirement}
+            self, dependencies=[*self.dependencies, requirement.id]
         )
 
-    def has_cycle(self, new_requirement: Self) -> bool:
-        """새 요구사항을 추가했을 때 순환 참조 발생 여부 확인 (DFS)"""
-
-        def dfs(requirement: Self, path: set[UUID]) -> bool:
-            if requirement.id in path:
-                return True
-
-            path.add(requirement.id)
-            result = any(dfs(dep, path) for dep in requirement.dependencies.values())
-            path.remove(requirement.id)
-            return result
-
-        return dfs(new_requirement, {self.id})
-
-    def unlink_predecessor(self, requirement: Self) -> Self:
+    def unlink_predecessor(self, predecessor: Self) -> Self:
         """선행 요구사항 제거"""
-        if requirement.id not in self.dependencies:
+        if predecessor.id not in self.dependencies:
             raise RequirementDependencyNotFoundError(
                 "해당 선행 요구사항이 존재하지 않습니다."
             )
 
         return replace(
             self,
-            dependencies={
-                k: v for k, v in self.dependencies.items() if k != requirement.id
-            },
+            dependencies=[req_id for req_id in self.dependencies if req_id != predecessor.id]
         )
