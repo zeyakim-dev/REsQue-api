@@ -1,6 +1,7 @@
 import pytest
 
 from resque_api.domain.common.exceptions import InvalidEmailError
+from resque_api.domain.common.value_objects import Email
 from resque_api.domain.user.entities import User
 from resque_api.domain.user.exceptions import InactiveUserError
 from resque_api.domain.user.value_objects import AuthProvider, UserStatus
@@ -34,7 +35,7 @@ class TestUser:
             assert user.auth_provider == AuthProvider.EMAIL
             assert user.status == UserStatus.ACTIVE
 
-        def test_create_user_with_invalid_email(self, invalid_email_user):
+        def test_create_user_with_invalid_email(self):
             """잘못된 이메일 형식으로 사용자 생성 시도
 
             시나리오:
@@ -43,7 +44,7 @@ class TestUser:
             """
             # When/Then
             with pytest.raises(InvalidEmailError) as exc_info:
-                User(**invalid_email_user)
+                User(email=Email("invalid-email"))
             assert "Invalid email format" in str(exc_info.value)
 
         def test_create_oauth_user(self, oauth_user_data):
@@ -58,7 +59,7 @@ class TestUser:
 
             # Then
             assert oauth_user.auth_provider == AuthProvider.GOOGLE
-            assert "gmail.com" in oauth_user.email
+            assert "gmail.com" in oauth_user.email.value
 
     class TestUserAuthentication:
         """사용자 인증 테스트"""
