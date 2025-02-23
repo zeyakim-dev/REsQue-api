@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import secrets
 from typing import Self
@@ -12,6 +12,7 @@ class ProjectStatus(Enum):
     """프로젝트 상태"""
 
     ACTIVE = "ACTIVE"
+    CLOSED = "CLOSED"
     ARCHIVED = "ARCHIVED"
 
 
@@ -41,6 +42,8 @@ class ProjectTitle(ValueObject[str]):
     def __post_init__(self):
         if not self.value:
             raise InvalidTitleError("Title cannot be empty")
+        if len(self.value) < 3:
+            raise InvalidTitleError("Title is too short")
         if len(self.value) > 100:
             raise InvalidTitleError("Title is too long")
 
@@ -56,6 +59,9 @@ class InvitationCode(ValueObject[str]):
         """안전한 초대 코드 생성"""
         return cls(secrets.token_urlsafe(32))
     
+    def __hash__(self) -> int:
+        return hash(self.value)
+
     def __str__(self) -> str:
         return self.value
 
@@ -63,14 +69,16 @@ class InvitationCode(ValueObject[str]):
 @dataclass(frozen=True)
 class InvitationExpiration(ValueObject[datetime]):
     """초대 유효 기간 VO"""
-
-    expires_at: datetime
+    
+    value: datetime
 
     @classmethod
     def create(cls, days: int = 7) -> Self:
         """초대 유효 기간을 현재 시간 기준으로 설정"""
-        return cls(datetime.now() + timedelta(days=days))
+
+        expiration_date = datetime.now(timezone.utc) + timedelta(days=days)
+        return cls(value=expiration_date)
 
     def is_expired(self) -> bool:
         """초대 코드가 만료되었는지 확인"""
-        return datetime.now() > self.expires_at
+        return datetime.now(timezone.utc) > self.value

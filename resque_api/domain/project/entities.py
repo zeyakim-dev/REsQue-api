@@ -54,8 +54,9 @@ class Project(Aggregate):
     status: ProjectStatus
     owner_id: UUID
     created_at: datetime
+
     members: List[ProjectMember] = field(default_factory=list)
-    invitations: Dict[str, ProjectInvitation] = field(default_factory=dict)
+    invitations: Dict[InvitationCode, ProjectInvitation] = field(default_factory=dict)
 
     def __post_init__(self):
         if not any(m.user_id == self.owner_id for m in self.members):
@@ -74,10 +75,10 @@ class Project(Aggregate):
 
         invitation = ProjectInvitation(email=email, role=role)
 
-        new_invitations = {**self.invitations, str(invitation.code): invitation}
+        new_invitations = {**self.invitations, invitation.code: invitation}
         return replace(self, invitations=new_invitations), invitation
 
-    def accept_invitation(self, code: str, user: User) -> tuple[Self, ProjectMember]:
+    def accept_invitation(self, code: InvitationCode, user: User) -> tuple[Self, ProjectMember]:
         invitation = self.invitations.get(code)
         if not invitation:
             raise InvalidInvitationCodeError("Invalid invitation code")
@@ -96,7 +97,7 @@ class Project(Aggregate):
         
         new_member = ProjectMember(user_id=user.id, role=invitation.role)
         updated_invitation = replace(invitation, status=InvitationStatus.ACCEPTED)
-        new_invitations = {**self.invitations, str(invitation.code): updated_invitation}
+        new_invitations = {**self.invitations, invitation.code: updated_invitation}
 
         return replace(self, members=[*self.members, new_member], invitations=new_invitations), new_member
 
@@ -104,7 +105,7 @@ class Project(Aggregate):
         if self.status in [ProjectStatus.ARCHIVED, ProjectStatus.CLOSED]:
             return False
         
-        member = next((m for m in self.members if m.user == user), None)
+        member = next((m for m in self.members if m.user_id == user.id), None)
         return member is not None and member.role in [ProjectRole.MANAGER, ProjectRole.MEMBER]
 
     def update_status(self, new_status: ProjectStatus) -> Self:
