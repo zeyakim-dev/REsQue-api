@@ -52,17 +52,6 @@ class Requirement(Entity):
     comments: Dict[UUID, RequirementComment] = field(default_factory=dict)
     dependencies: list[UUID] = field(default_factory=list)
 
-    def __post_init__(self):
-        """초기화 시 유효성 검증"""
-        self._validate_title()
-
-    def _validate_title(self):
-        """제목 유효성 검사"""
-        if len(self.title) > 100:
-            raise RequirementTitleLengthError("제목은 100자 이내로 작성해야 합니다.")
-        if len(self.title) < 2:
-            raise RequirementTitleLengthError("제목은 2자 이상이어야 합니다.")
-
     def change_status(self, new_status: RequirementStatus) -> Self:
         """요구사항 상태 변경"""
         
@@ -115,12 +104,9 @@ class Requirement(Entity):
 
     def change_assignee(self, new_assignee: ProjectMember | None) -> Self:
         """담당자 변경"""
-        if new_assignee is None:
-            return replace(self, assignee_id=None)
+        new_assignee_id = new_assignee.id if new_assignee else None
+        return self if self.assignee_id == new_assignee_id else replace(self, assignee_id=new_assignee_id)
 
-        if self.assignee_id == new_assignee.id:
-            return self
-        return replace(self, assignee_id=new_assignee.id)
 
     def link_predecessor(self, requirement: Self) -> Self:
         """선행 요구사항 연결"""
