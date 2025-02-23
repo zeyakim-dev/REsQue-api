@@ -42,7 +42,7 @@ class Requirement(Entity):
     project_id: UUID
     title: RequirementTitle
     description: RequirementDescription
-    assignee: ProjectMember | None
+    assignee_id: UUID | None
     created_at: datetime
     updated_at: datetime
     priority: RequirementPriority
@@ -115,9 +115,12 @@ class Requirement(Entity):
 
     def change_assignee(self, new_assignee: ProjectMember | None) -> Self:
         """담당자 변경"""
-        if self.assignee == new_assignee:
+        if new_assignee is None:
+            return replace(self, assignee_id=None)
+
+        if self.assignee_id == new_assignee.id:
             return self
-        return replace(self, assignee=new_assignee)
+        return replace(self, assignee_id=new_assignee.id)
 
     def link_predecessor(self, requirement: Self) -> Self:
         """선행 요구사항 연결"""
