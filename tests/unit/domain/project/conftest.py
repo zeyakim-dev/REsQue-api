@@ -9,31 +9,6 @@ from resque_api.domain.user.entities import User
 
 
 @pytest.fixture
-def valid_project_data():
-    """유효한 프로젝트 데이터"""
-    return {
-        "title": "Test Project",
-        "description": "A description for the test project",
-        "status": ProjectStatus.ACTIVE,
-        "owner_id": uuid4(),
-        "created_at": datetime.now(timezone.utc),
-    }
-
-
-@pytest.fixture
-def valid_project(valid_project_data, valid_user):
-    """유효한 프로젝트 객체 생성"""
-    project_data = {**valid_project_data, "owner_id": valid_user.id}
-    project = Project(**project_data)
-
-    # 프로젝트 생성 후 기본 소유자(MANAGER) 추가
-    new_member = ProjectMember(user_id=valid_user.id, role=ProjectRole.MANAGER)
-    project = project.replace(members=[new_member])
-    
-    return project
-
-
-@pytest.fixture
 def expired_project_invitation(valid_project):
     """만료된 초대 생성"""
     # 유효한 초대 생성 후 만료 처리
@@ -41,7 +16,8 @@ def expired_project_invitation(valid_project):
     updated_project, invitation = valid_project.invite_member(
         invite_email, ProjectRole.MEMBER
     )
-    expired_invitation = invitation.replace(
+    expired_invitation = replace(
+        invitation,
         expires_at=datetime.now(timezone.utc) - timedelta(days=1)
     )
     
