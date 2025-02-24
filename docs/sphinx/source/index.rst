@@ -51,5 +51,5 @@ REsQue API의 기능을 검증하고 품질을 보장하는 테스트 문서입�
    :maxdepth: 2
    :caption: 테스트 문서
 
-   design/test/index
+   test/index
    

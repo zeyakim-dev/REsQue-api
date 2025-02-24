@@ -18,7 +18,14 @@ author = "zeyakim-dev"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx_rtd_theme", "sphinx.ext.autodoc", "sphinxcontrib.mermaid"]
+# docs/sphinx/source/conf.py
+
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.autosectionlabel',  # 추가
+    'sphinxcontrib.mermaid'
+]
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -40,3 +47,9 @@ mermaid.initialize({
     securityLevel: 'loose'
 });
 """
+
+# 문서 전체에서 고유한 섹션 ID 생성
+autosectionlabel_prefix_document = True
+
+# 최대 헤딩 깊이 제한 (1: #, 2: ##, ...)
+autosectionlabel_maxdepth = 3
