@@ -5,5 +5,5 @@ from resque_api.application.message.event.base.event import Event
 E = TypeVar('E', bound=Event)
 
 class EventHandler(Protocol, Generic[E]):
-    def execute(self, event: E) -> None:
+    def handle(self, event: E) -> None:
         ...
