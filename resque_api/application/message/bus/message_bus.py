@@ -13,6 +13,9 @@ class MessageBus:
         self.uow = uow
 
     def subscribe(self, handler: CommandHandler | EventHandler, message_type: Type[Message]):
+        if message_type in self.handlers:
+            raise Exception(f"핸들러가 이미 등록되었습니다. 메시지 타입: {message_type.__name__}")
+
         self.handlers[message_type] = handler
 
     def publish(self, message: Message):
