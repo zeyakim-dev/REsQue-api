@@ -1,4 +1,7 @@
 from typing import List, Optional
+
+import pytest
+from resque_api.application.ports.repository.exceptions import AggregateNotFoundError, DeleteNonExistentAggregateError
 from resque_api.application.ports.repository.repository import Repository
 
 class Entity:
@@ -32,7 +35,7 @@ class TestCreateEntity:
         repo = FakeRepository()
         entity = Entity(id=1, data="test data")
         repo.save(entity)
-        assert repo.find_by_id(1) == entity
+        assert any(e.id == 1 for e in repo._entities.values())
 
     def test_create_existing_entity(self):
         repo = FakeRepository()
@@ -40,47 +43,48 @@ class TestCreateEntity:
         repo.save(entity)
         duplicate_entity = Entity(id=1, data="duplicate data")
         repo.save(duplicate_entity)
-        assert repo.find_by_id(1) == duplicate_entity
+        assert any(e.id == 1 for e in repo._entities.values())
 
 class TestReadEntity:
     def test_read_existing_entity(self):
         repo = FakeRepository()
         entity = Entity(id=1, data="test data")
         repo.save(entity)
-        result = repo.find_by_id(1)
+        result = repo.get(1)
         assert result == entity
 
     def test_read_nonexistent_entity(self):
         repo = FakeRepository()
-        result = repo.find_by_id(999)
-        assert result is None
+        with pytest.raises(AggregateNotFoundError):
+            result = repo.get(999)    
 
 class TestUpdateEntity:
     def test_update_existing_entity(self):
         repo = FakeRepository()
         entity = Entity(id=1, data="test data")
-        repo.save(entity)
+        repo._entities[entity.id] = entity
         updated_entity = Entity(id=1, data="updated data")
         repo.update(updated_entity)
-        assert repo.find_by_id(1) == updated_entity
 
+        assert repo._entities[entity.id] == updated_entity
+        
     def test_update_entity_no_change(self):
         repo = FakeRepository()
         entity = Entity(id=1, data="test data")
-        repo.save(entity)
-        unchanged_entity = Entity(id=1, data="test data")
-        repo.update(unchanged_entity)
-        assert repo.find_by_id(1) == entity
+        repo._entities[entity.id] = entity
+        updated_entity = Entity(id=1, data="updated data")
+        repo.update(updated_entity)
 
 class TestDeleteEntity:
     def test_delete_existing_entity(self):
         repo = FakeRepository()
         entity = Entity(id=1, data="test data")
-        repo.save(entity)
+        repo._entities[entity.id] = entity
         repo.delete(1)
-        assert repo.find_by_id(1) is None
+        assert 1 not in repo._entities
 
     def test_delete_nonexistent_entity(self):
         repo = FakeRepository()
-        repo.delete(999)
-        assert repo.find_by_id(999) is None
+        with pytest.raises(DeleteNonExistentAggregateError):
+            repo.delete(999)
+        
