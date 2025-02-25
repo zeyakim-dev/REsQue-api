@@ -69,6 +69,8 @@ RequirementAggregate
 :책임:
     * 요구사항 기본 CRUD
     * 상태 관리
+    * 우선순위 및 담당자 변경
+    * 코멘트 및 선행조건 관리
 
 :주요 속성:
     .. code-block:: python
@@ -78,11 +80,28 @@ RequirementAggregate
             title: str
             description: str
             status: RequirementStatus  # TODO/IN_PROGRESS/DONE
-            assignee: UserId
+            assignee: User
+            priority: int  # 우선순위
+            tags: List[str]  # 태그 목록
+            comments: List[Comment]  # 코멘트 목록
+            dependencies: List[Requirement]  # 선행 요구사항
+
+        class Comment:
+            id: UUID
+            author: User
+            content: str
+            created_at: datetime
 
 :관련 이벤트:
     * 요구사항_등록됨
     * 요구사항_상태_변경됨
+    * 요구사항_수정됨
+    * 요구사항_삭제됨
+    * 요구사항-우선순위_변경됨
+    * 요구사항-태그_추가됨
+    * 요구사항-코멘트_추가됨
+    * 요구사항-담당자_변경됨
+    * 요구사항-선행조건_연결됨
 
 협업 애그리게이트
 -----------------
@@ -108,3 +127,4 @@ CollaborationAggregate
     * 알림_전송됨
     * 작업_댓글_추가됨
     * 요구사항-상태_변경됨 → 상태 변경 알림 처리
+

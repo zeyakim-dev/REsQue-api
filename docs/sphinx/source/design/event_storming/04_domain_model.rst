@@ -16,11 +16,11 @@ User
         auth_provider: AuthProvider  # EMAIL, GOOGLE
         status: UserStatus  # ACTIVE, INACTIVE
         created_at: datetime
-        
+
         def authenticate(self, password: str) -> bool:
             """이메일 사용자 인증"""
             pass
-            
+
         def update_status(self, new_status: UserStatus) -> None:
             """사용자 상태 변경"""
             pass
@@ -41,15 +41,15 @@ Project
         created_at: datetime
         members: List[ProjectMember]
         invitations: List[ProjectInvitation]
-        
+
         def add_member(self, user: User, role: ProjectRole) -> None:
             """멤버 추가"""
             pass
-            
+
         def update_status(self, new_status: ProjectStatus) -> None:
             """프로젝트 상태 변경"""
             pass
-            
+
         def can_modify(self, user: User) -> bool:
             """사용자의 수정 권한 확인"""
             pass
@@ -78,7 +78,7 @@ ProjectMember
         user_id: UUID
         role: ProjectRole  # VIEWER, MEMBER
         joined_at: datetime
-        
+
         def change_role(self, new_role: ProjectRole) -> None:
             """역할 변경"""
             pass
@@ -96,13 +96,13 @@ ProjectInvitation
         status: InvitationStatus  # PENDING, ACCEPTED, EXPIRED
         expires_at: datetime
         created_at: datetime
-        
+
         def accept(self) -> None:
             """초대 수락"""
             if self.is_expired():
                 raise InvitationExpiredError()
             self.status = InvitationStatus.ACCEPTED
-            
+
         def is_expired(self) -> bool:
             """만료 여부 확인"""
             return datetime.utcnow() > self.expires_at
@@ -124,14 +124,51 @@ Requirement
         assignee_id: Optional[UUID]
         created_at: datetime
         updated_at: datetime
-        
+        priority: int
+        tags: List[str]
+        comments: List[RequirementComment]
+        dependencies: List[UUID]
+
         def assign_to(self, user: User) -> None:
             """담당자 지정"""
-            pass
-            
+            self.assignee_id = user.id
+
         def change_status(self, new_status: RequirementStatus) -> None:
             """상태 변경"""
-            pass
+            self.status = new_status
+            self.updated_at = datetime.utcnow()
+
+        def add_tag(self, tag: str) -> None:
+            """태그 추가"""
+            if tag not in self.tags:
+                self.tags.append(tag)
+
+        def add_comment(self, author: User, content: str) -> None:
+            """코멘트 추가"""
+            comment = RequirementComment(
+                id=uuid4(),
+                requirement_id=self.id,
+                author_id=author.id,
+                content=content,
+                created_at=datetime.utcnow()
+            )
+            self.comments.append(comment)
+
+        def set_priority(self, priority: int) -> None:
+            """우선순위 변경"""
+            self.priority = priority
+
+RequirementComment
+^^^^^^^^^^^^^^^^^^
+.. code-block:: python
+
+    @dataclass
+    class RequirementComment:
+        id: UUID
+        requirement_id: UUID
+        author_id: UUID
+        content: str
+        created_at: datetime
 
 도메인 규칙
 ----------
@@ -162,6 +199,9 @@ Requirement
 * 프로젝트에 속한 멤버만 담당자로 지정 가능
 * 상태 변경 시 자동으로 updated_at 갱신
 * 요구사항은 담당자 없이도 생성 가능
+* 우선순위는 정수 값으로 관리됨
+* 태그는 중복 없이 관리됨
+* 요구사항 간 선행 관계를 지원
 
 값 객체(Value Objects)
 -------------------
@@ -181,9 +221,9 @@ Requirement
         ARCHIVED = "ARCHIVED"
 
     class ProjectRole(Enum):
-        VIEWER = "VIEWER"    # 읽기 전용
-        MEMBER = "MEMBER"    # 작업 수정 가능
-        MANAGER = "MANAGER"  # 프로젝트 관리 권한
+        VIEWER = "VIEWER"
+        MEMBER = "MEMBER"
+        MANAGER = "MANAGER"
 
     class RequirementStatus(Enum):
         TODO = "TODO"
@@ -196,4 +236,5 @@ Requirement
         EXPIRED = "EXPIRED"
 
     class InvitationExpiredError(Exception):
-        pass 
+        pass
+
