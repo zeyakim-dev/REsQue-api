@@ -1,5 +1,5 @@
 from typing import Protocol
-from resque_api.application.ports.repository.exceptions import AggregateNotFoundError
+from resque_api.application.ports.repository.exceptions import AggregateNotFoundError, DeleteNonExistentAggregateError
 from resque_api.domain.base.aggregate import Aggregate
 
 
@@ -21,7 +21,7 @@ class Repository(Protocol):
 
     def delete(self, aggregate_id: str) -> None:
         if not self._get(aggregate_id):
-            raise AggregateNotFoundError(f"{aggregate_id} not found")  
+            raise DeleteNonExistentAggregateError(f"{aggregate_id} not found")
         self._delete(aggregate_id)
 
     def _save(self, aggregate: Aggregate) -> None:
