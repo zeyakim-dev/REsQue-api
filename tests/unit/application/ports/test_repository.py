@@ -13,7 +13,7 @@ class FakeRepository(Repository):
     def _save(self, entity: Entity) -> None:
         self._entities[entity.id] = entity
 
-    def _find_by_id(self, entity_id: int) -> Optional[Entity]:
+    def _get(self, entity_id: int) -> Optional[Entity]:
         return self._entities.get(entity_id)
 
     def _find_all(self) -> List[Entity]:
