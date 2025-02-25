@@ -1,36 +1,32 @@
-import pytest
 from typing import List, Optional
-from resque_api.application.ports.repository import Repository  # 실제 Repository 클래스가 정의된 모듈을 import
+from resque_api.application.ports.repository.repository import Repository
 
-# 가상의 엔티티 클래스
 class Entity:
     def __init__(self, id: int, data: str):
         self.id = id
         self.data = data
 
-# FakeRepository 구현
 class FakeRepository(Repository):
     def __init__(self):
         self._entities = {}
 
-    def save(self, entity: Entity) -> None:
+    def _save(self, entity: Entity) -> None:
         self._entities[entity.id] = entity
 
-    def find_by_id(self, entity_id: int) -> Optional[Entity]:
+    def _find_by_id(self, entity_id: int) -> Optional[Entity]:
         return self._entities.get(entity_id)
 
-    def find_all(self) -> List[Entity]:
+    def _find_all(self) -> List[Entity]:
         return list(self._entities.values())
 
-    def update(self, entity: Entity) -> None:
+    def _update(self, entity: Entity) -> None:
         if entity.id in self._entities:
             self._entities[entity.id] = entity
 
-    def delete(self, entity_id: int) -> None:
+    def _delete(self, entity_id: int) -> None:
         if entity_id in self._entities:
             del self._entities[entity_id]
 
-# 테스트 클래스
 class TestCreateEntity:
     def test_create_new_entity(self):
         repo = FakeRepository()
